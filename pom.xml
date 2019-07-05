@@ -18,6 +18,8 @@
         <java.version>1.8</java.version>
         <poi.version>3.17</poi.version>
         <mail.version>1.4.7</mail.version>
+        <commons-net.version>3.6</commons-net.version>
+        <commons-io.version>2.6</commons-io.version>
     </properties>
 
     <dependencies>
@@ -46,6 +48,18 @@
             <groupId>javax.mail</groupId>
             <artifactId>mail</artifactId>
             <version>${mail.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>${commons-net.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
         </dependency>
 
         <dependency>
