@@ -1,7 +1,9 @@
 package com.ahzak.utils;
 
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.WebRequest;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.gargoylesoftware.htmlunit.*;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.UrlUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Data;
@@ -17,6 +19,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +46,7 @@ import java.util.regex.Pattern;
  * 仅限于授权后使用，禁止非授权传阅以及私自用于商业目的。
  */
 @Slf4j
+@Component
 public class FreeProxyPool {
 
     private static final String[] USER_AGENTS = {
@@ -61,45 +70,125 @@ public class FreeProxyPool {
     };
 
     private static final Pattern p = Pattern.compile("(?<=;}\\);</script>).*(?=<br>高效高匿名代理IP提取地址)");
+    private static final Pattern PATTERN_66IP = Pattern.compile("(?<=</script>).*(?=<br/></div>)");
 
     private static final ThreadPoolExecutor EXECUTOR = new ThreadPoolExecutor(16, 32, 0L,
-            TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(64),
-            new ThreadFactoryBuilder().setNameFormat("proxy-pick-%d").build(),
+            TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1024),
+            new ThreadFactoryBuilder().setNameFormat("proxy-pick-%02d").build(),
             new ThreadPoolExecutor.AbortPolicy());
 
     private static final List<FreeProxy> freeProxyPool = Collections.synchronizedList(new ArrayList<>(100));
 
     private static final int PROXY_PICK_SIZE = 50;
 
-    private static final String FREE_PROXY_URL = "http://www.89ip.cn/tqdl.html?api=1&num=" + PROXY_PICK_SIZE + "&port=&address=&isp=";
+    private static final String FREE_PROXY_URL_1 = "https://lab.crossincode.com/proxy/get/?num=" + PROXY_PICK_SIZE;
+    private static final String FREE_PROXY_URL_2 = "http://www.89ip.cn/tqdl.html?api=1&num=" + PROXY_PICK_SIZE + "&port=&address=&isp=";
+    // 高匿代理
+    private static final String FREE_PROXY_URL_3 = "https://www.xicidaili.com/nn";
+    private static final String FREE_PROXY_URL_4 = "http://www.66ip.cn/nmtq.php?getnum=" + PROXY_PICK_SIZE + "&isp=0&anonymoustype=3&start=&ports=&export=&ipaddress=&area=0&proxytype=1&api=66ip";
 
     private static final String SOGOU_SNUID_COOKIE_URL = "https://weixin.sogou.com/weixin?type=2&query=%E5%AE%9D%E5%A4%9A%E5%85%AD%E8%8A%B1&ie=utf8&s_from=input&sug=n&sug_type=&w=01019900&sut=205&sst0=1543168556321&lkt=1,1543168556219,1543168556219";
 
 
     static {
         // TODO 定时刷新
-        String html = doGet(FREE_PROXY_URL);
-        if (html != null) {
-            List<FreeProxy> freeProxies = regexProxy(html);
-            for (FreeProxy freeProxy : freeProxies) {
-                EXECUTOR.submit(() -> {
-                    boolean useful = testProxy(freeProxy);
-                    if (useful) {
-                        freeProxyPool.add(freeProxy);
-                    }
-                });
-            }
-        }
+        refreshProxy();
     }
 
     public static void main(String[] args) throws IOException {
 
-        while (freeProxyPool.isEmpty()) {
+//        while (freeProxyPool.isEmpty()) {
+//
+//        }
 
+        String s = get66ip("http://www.66ip.cn/nmtq.php?getnum=50&isp=0&anonymoustype=3&start=&ports=&export=&ipaddress=&area=0&proxytype=1&api=66ip");
+
+        System.out.println(s);
+        resolve66ip(s);
+//        getCookie1(randomProxy());
+    }
+
+
+    /**
+     * 解析西刺免费代理页面
+     * @param html html
+     * @return java.util.List<com.jeecms.collect.data.service.jcspider.FreeProxy>
+     * @author Zhu Kaixiao
+     * @date 2019/7/18 13:48
+     **/
+    private static List<FreeProxy> resolveXici(String html) {
+        Document doc = Jsoup.parse(html);
+        Elements select = doc.select("#ip_list>tbody>tr>td:nth-child(2)");
+        String[] hosts = select.text().split(" ");
+        Elements select2 = doc.select("#ip_list>tbody>tr>td:nth-child(3)");
+        String[] ports = select2.text().split(" ");
+        List<FreeProxy> proxies = new ArrayList<>(hosts.length);
+        for (int i = 0; i < hosts.length; i++) {
+            FreeProxy freeProxy = new FreeProxy();
+            proxies.add(freeProxy);
+            freeProxy.setHost(hosts[i]);
+            freeProxy.setPort(Integer.parseInt(ports[i]));
+        }
+        return proxies;
+    }
+
+
+    private static List<FreeProxy> resolve66ip(String html) {
+        List<FreeProxy> proxies = new ArrayList<>();
+        Document doc = Jsoup.parse(html);
+        Element body = doc.body();
+        String text = body.text();
+        String[] hps = text.split(" ");
+        for (String hp : hps) {
+            FreeProxy freeProxy = convertStrToProxy(hp);
+            proxies.add(freeProxy);
+        }
+        return proxies;
+    }
+
+    @Scheduled(initialDelay = 0, fixedRate = 10 * 60 * 1000)
+    public void sch() {
+        System.out.println("free proxy 定时任务...");
+    }
+
+
+    private static void refreshProxy() {
+        List<FreeProxy> proxies = new ArrayList<>(100);
+        String html;
+//        html = doGet(FREE_PROXY_URL_1);
+//        if (html != null) {
+//            List<FreeProxy> freeProxies = fetchFromCrossin(html);
+//            proxies.addAll(freeProxies);
+//        }
+//        html = doGet(FREE_PROXY_URL_2);
+//        if (html != null) {
+//            List<FreeProxy> freeProxies = regexProxy(html);
+//            proxies.addAll(freeProxies);
+//        }
+        html = doGet(FREE_PROXY_URL_3);
+        if (html != null) {
+            List<FreeProxy> freeProxies = resolveXici(html);
+            proxies.addAll(freeProxies);
         }
 
-        getCookie1(randomProxy());
+        html = get66ip(FREE_PROXY_URL_4);
+        if (html != null) {
+            List<FreeProxy> freeProxies = resolve66ip(html);
+            proxies.addAll(freeProxies);
+        }
+
+        for (FreeProxy freeProxy : proxies) {
+            EXECUTOR.submit(() -> {
+                if (!freeProxyPool.contains(freeProxy)) {
+                    boolean useful = testProxy(freeProxy);
+                    if (useful) {
+                        freeProxyPool.add(freeProxy);
+                    }
+                }
+            });
+        }
     }
+
 
 
     // 抓取代理
@@ -135,14 +224,33 @@ public class FreeProxyPool {
             String group = matcher.group();
             String[] split = group.split("<br>");
             for (String hp : split) {
-                String[] hpArr = hp.split(":");
-                FreeProxy freeProxy = new FreeProxy();
+                FreeProxy freeProxy = convertStrToProxy(hp);
                 freeProxies.add(freeProxy);
-                freeProxy.setHost(hpArr[0]);
-                freeProxy.setPort(Integer.parseInt(hpArr[1]));
             }
         }
         return freeProxies;
+    }
+
+    private static List<FreeProxy> fetchFromCrossin(String json) {
+        List<FreeProxy> freeProxies = new ArrayList<>(PROXY_PICK_SIZE);
+        Map map = JSONObject.parseObject(json, HashMap.class);
+        JSONArray arr = (JSONArray) map.get("proxies");
+        for (Object value : arr) {
+            JSONObject o = (JSONObject) value;
+            String hp = o.getString("http");
+            FreeProxy freeProxy = convertStrToProxy(hp);
+            freeProxies.add(freeProxy);
+        }
+        return freeProxies;
+    }
+
+
+    private static FreeProxy convertStrToProxy(String hp) {
+        String[] hpArr = hp.split(":");
+        FreeProxy freeProxy = new FreeProxy();
+        freeProxy.setHost(hpArr[0]);
+        freeProxy.setPort(Integer.parseInt(hpArr[1]));
+        return freeProxy;
     }
 
     // 清洗代理
@@ -162,19 +270,19 @@ public class FreeProxyPool {
                 // 延时越低, 分数越高
                 long w = 60000 - timeout;
                 freeProxy.setWeight(w < 0 ? 1000 : w);
-                log.debug("{}   OK", freeProxy);
+                log.debug("[OK  ] {}", freeProxy);
                 return true;
             } else {
-                log.debug("{}   FAIL", freeProxy);
+                log.debug("[FAIL] {}", freeProxy);
             }
         } catch (IOException e) {
-            log.debug("{}   FAIL", freeProxy, e);
+            log.debug("[FAIL] {}", freeProxy);
         }
         return false;
     }
 
 
-    public static FreeProxy randomProxy() {
+    public FreeProxy randomProxy() {
         if (freeProxyPool.isEmpty()) {
             log.warn("代理池为空");
             return null;
@@ -182,6 +290,64 @@ public class FreeProxyPool {
         Random random = new Random();
         return freeProxyPool.get(random.nextInt(freeProxyPool.size()));
     }
+
+    public FreeProxy nextProxy(FreeProxy proxy) {
+        if (proxy == null) {
+            if (!freeProxyPool.isEmpty()) {
+                freeProxyPool.sort((o1, o2) -> Long.compare(o2.getWeight(), o1.getWeight()));
+                return freeProxyPool.get(0);
+            }
+        } else {
+            // 减分
+            proxy.setWeight(proxy.getWeight() - 5000);
+            if (proxy.getWeight() < 0) {
+                freeProxyPool.remove(proxy);
+            }
+            // 按分排序  取第一个
+            freeProxyPool.sort((o1, o2) -> Long.compare(o2.getWeight(), o1.getWeight()));
+            return freeProxyPool.get(0);
+//            int i = freeProxyPool.indexOf(proxy);
+//            if (i > 0 && i + 1 < freeProxyPool.size()) {
+//                return freeProxyPool.get(i + 1);
+//            }
+        }
+        return null;
+    }
+
+
+    private static String get66ip(String url) {
+        WebClient webClient = new WebClient();
+        webClient.getOptions().setThrowExceptionOnScriptError(false);//当JS执行出错的时候是否抛出异常, 这里选择不需要
+        webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);//当HTTP的状态非200时是否抛出异常, 这里选择不需要
+        webClient.getOptions().setActiveXNative(false);
+        webClient.getOptions().setCssEnabled(false);//是否启用CSS, 因为不需要展现页面, 所以不需要启用
+        webClient.getOptions().setJavaScriptEnabled(true); //很重要，启用JS
+        webClient.setAjaxController(new NicelyResynchronizingAjaxController());//很重要，设置支持AJAX
+        webClient.getOptions().setUseInsecureSSL(true);
+        WebRequest request = null;
+        try {
+            request = new WebRequest(UrlUtils.toUrlUnsafe(url));
+            request.setCharset(Charset.forName("UTF-8"));
+            request.setAdditionalHeader("Host", "www.66ip.cn");
+            request.setAdditionalHeader("Connection", "keep-alive");
+            request.setAdditionalHeader("Cache-Control", "max-age=0");
+            request.setAdditionalHeader("Upgrade-Insecure-Requests", "1");
+            request.setAdditionalHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36");
+            request.setAdditionalHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3");
+            request.setAdditionalHeader("Accept-Encoding", "gzip, deflate");
+            request.setAdditionalHeader("Accept-Language", "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7");
+            request.setAdditionalHeader("Cookie", "__jsluid_h=d83195b9102f972b15ced004c8f73d33; __jsl_clearance=1563430774.428|0|snjw4XzbF1VytjU9LmMYIjVIdhE%3D");
+
+            HtmlPage page = webClient.getPage(request);
+            webClient.waitForBackgroundJavaScript(30000);
+            String s = page.asXml();
+            return s;
+        } catch (Exception e) {
+
+        }
+        return null;
+    }
+
 
 
     public static void getCookie(FreeProxy proxy) {
