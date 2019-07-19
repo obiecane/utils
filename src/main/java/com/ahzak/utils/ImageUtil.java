@@ -37,7 +37,7 @@ public class ImageUtil {
         try (ImageInputStream iis = ImageIO.createImageInputStream(imgFile)) {
             Iterator<ImageReader> iter = ImageIO.getImageReaders(iis);
             if (!iter.hasNext()) {
-                throw new IllegalArgumentException("无法识别的文件!");
+                throw new IllegalArgumentException(String.format("无法识别的文件: [%s]", imgFile.getCanonicalPath()));
             }
             ImageReader reader = iter.next();
             format = reader.getFormatName();
