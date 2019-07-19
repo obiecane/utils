@@ -1,4 +1,4 @@
-package com.ahzak.utils;
+package com.ahzak.utils.jcspider;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -6,8 +6,6 @@ import com.gargoylesoftware.htmlunit.*;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.UrlUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.HttpClient;
@@ -43,6 +41,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * 代理ip池
  * @author Zhu Kaixiao
  * @version 1.0
  * @date 2019/7/17 15:11
@@ -157,8 +156,9 @@ public class FreeProxyPool {
 
 
     private static void refreshProxy() {
-        List<FreeProxy> proxies = new ArrayList<>(100);
-        String html;
+        try {
+            List<FreeProxy> proxies = new ArrayList<>(100);
+            String html;
 //        html = doGet(FREE_PROXY_URL_1);
 //        if (html != null) {
 //            List<FreeProxy> freeProxies = fetchFromCrossin(html);
@@ -169,28 +169,32 @@ public class FreeProxyPool {
 //            List<FreeProxy> freeProxies = regexProxy(html);
 //            proxies.addAll(freeProxies);
 //        }
-        html = doGet(FREE_PROXY_URL_3);
-        if (html != null) {
-            List<FreeProxy> freeProxies = resolveXici(html);
-            proxies.addAll(freeProxies);
-        }
+            html = doGet(FREE_PROXY_URL_3);
+            if (html != null) {
+                List<FreeProxy> freeProxies = resolveXici(html);
+                proxies.addAll(freeProxies);
+            }
 
-        html = get66ip(FREE_PROXY_URL_4);
-        if (html != null) {
-            List<FreeProxy> freeProxies = resolve66ip(html);
-            proxies.addAll(freeProxies);
-        }
+            html = get66ip(FREE_PROXY_URL_4);
+            if (html != null) {
+                List<FreeProxy> freeProxies = resolve66ip(html);
+                proxies.addAll(freeProxies);
+            }
 
-        for (FreeProxy freeProxy : proxies) {
-            EXECUTOR.submit(() -> {
-                if (!freeProxyPool.contains(freeProxy)) {
-                    boolean useful = testProxy(freeProxy);
-                    if (useful) {
-                        freeProxyPool.add(freeProxy);
+            for (FreeProxy freeProxy : proxies) {
+                EXECUTOR.submit(() -> {
+                    if (!freeProxyPool.contains(freeProxy)) {
+                        boolean useful = testProxy(freeProxy);
+                        if (useful) {
+                            freeProxyPool.add(freeProxy);
+                        }
                     }
-                }
-            });
+                });
+            }
+        } catch (Exception ignore) {
+
         }
+
     }
 
 
@@ -321,12 +325,17 @@ public class FreeProxyPool {
 
     private static String get66ip(String url) {
         WebClient webClient = new WebClient();
-        webClient.getOptions().setThrowExceptionOnScriptError(false);//当JS执行出错的时候是否抛出异常, 这里选择不需要
-        webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);//当HTTP的状态非200时是否抛出异常, 这里选择不需要
+        //当JS执行出错的时候是否抛出异常, 这里选择不需要
+        webClient.getOptions().setThrowExceptionOnScriptError(false);
+        //当HTTP的状态非200时是否抛出异常, 这里选择不需要
+        webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
         webClient.getOptions().setActiveXNative(false);
-        webClient.getOptions().setCssEnabled(false);//是否启用CSS, 因为不需要展现页面, 所以不需要启用
-        webClient.getOptions().setJavaScriptEnabled(true); //很重要，启用JS
-        webClient.setAjaxController(new NicelyResynchronizingAjaxController());//很重要，设置支持AJAX
+        //是否启用CSS, 因为不需要展现页面, 所以不需要启用
+        webClient.getOptions().setCssEnabled(true);
+        //很重要，启用JS
+        webClient.getOptions().setJavaScriptEnabled(true);
+        //很重要，设置支持AJAX
+        webClient.setAjaxController(new NicelyResynchronizingAjaxController());
         webClient.getOptions().setUseInsecureSSL(true);
         WebRequest request = null;
         try {
@@ -340,7 +349,7 @@ public class FreeProxyPool {
             request.setAdditionalHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3");
             request.setAdditionalHeader("Accept-Encoding", "gzip, deflate");
             request.setAdditionalHeader("Accept-Language", "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7");
-            request.setAdditionalHeader("Cookie", "__jsluid_h=d83195b9102f972b15ced004c8f73d33; __jsl_clearance=1563430774.428|0|snjw4XzbF1VytjU9LmMYIjVIdhE%3D");
+            request.setAdditionalHeader("Cookie", "__jsluid_h=d83195b9102f972b15ced004c8f73d33; __jsl_clearance=1563499524.541|0|anQtszcB9Kf3nIbTbzRRNRncT4k%3D");
 
             HtmlPage page = webClient.getPage(request);
             webClient.waitForBackgroundJavaScript(30000);
@@ -418,14 +427,4 @@ public class FreeProxyPool {
     }
 }
 
-@Data
-@EqualsAndHashCode
-class FreeProxy {
-    private String host;
-    private int port;
 
-    /**
-     * 权重
-     */
-    private long weight;
-}
