@@ -1,20 +1,11 @@
 package com.ahzak.utils.jcspider;
 
+import com.ahzak.utils.date.MyDateUtils;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.*;
 import com.gargoylesoftware.htmlunit.util.Cookie;
-import com.jeecms.collect.data.context.CollectTaskContext;
-import com.jeecms.collect.data.context.CommonContext;
-import com.jeecms.collect.data.context.FastCollectWeChatTemplate;
-import com.jeecms.collect.data.model.JcCollectContent;
-import com.jeecms.collect.data.repository.JcCollectContentRepository;
-import com.jeecms.collect.data.request.FastCollectDataForWeChatRequest;
-import com.jeecms.collect.data.response.FastCollectDataForWeChatResponse;
-import com.jeecms.collect.data.response.FastCollectDataForWeChatResponseXpath;
-import com.jeecms.common.base.websocket.WebSocketContext;
-import com.jeecms.common.util.MyDateUtils;
+
 import lombok.extern.slf4j.Slf4j;
-import net.sf.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -26,33 +17,11 @@ import java.util.*;
 @Component
 public class FastCollectDataForWeChatProcessor extends JcPageProcessor {
 
-    @Autowired
-    private JcCollectContentRepository jcCollectContentRepository;
-
-    private static JcCollectContentRepository JCCOLLECTCONTENTREPOSITORY;
-
-    @PostConstruct
-    private void autowiredInit() {
-        JCCOLLECTCONTENTREPOSITORY = jcCollectContentRepository;
-    }
-
-    public FastCollectDataForWeChatProcessor() {
-        jcCollectContentRepository = JCCOLLECTCONTENTREPOSITORY;
-    }
-
-    private FastCollectDataForWeChatRequest fastCollectDataForWeChatRequest;
-    private FastCollectDataForWeChatResponseXpath fastCollectDataForWeChatResponseXpath;
 
 
-    public FastCollectDataForWeChatProcessor setFastCollectDataForWeChatRequest(FastCollectDataForWeChatRequest fastCollectDataForWeChatRequest) {
-        this.fastCollectDataForWeChatRequest = fastCollectDataForWeChatRequest;
-        return this;
-    }
 
-    public FastCollectDataForWeChatProcessor setFastCollectDataForWeChatResponseXpath(FastCollectDataForWeChatResponseXpath fastCollectDataForWeChatResponseXpath) {
-        this.fastCollectDataForWeChatResponseXpath = fastCollectDataForWeChatResponseXpath;
-        return this;
-    }
+
+
 
     /**
      * 处理搜狗搜索页面, 如果处理成功, 返回下一级页面的url, 否则返回null

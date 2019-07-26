@@ -28,7 +28,7 @@ public class TransportUtil {
      * @author Zhu Kaixiao
      * @date 2019/7/12 9:46
      **/
-    public static File downloadFromUrl(String urlStr, String savePath, boolean overwrite) throws IOException {
+    public static File downLoadFromUrl(String urlStr, String savePath, boolean overwrite) throws IOException {
         File file = new File(savePath);
 
         if (!overwrite && file.exists()) {
@@ -64,13 +64,14 @@ public class TransportUtil {
 
 
     /**
-     * see {@link TransportUtil#downloadFromUrl(String, String, boolean)}
+     * see {@link TransportUtil#downLoadFromUrl(String, String, boolean)}
      *
      * @return java.io.File
      * @author Zhu Kaixiao
      * @date 2019/7/12 9:48
      **/
-    public static File downloadFromUrl(String urlStr, String savePath) throws IOException {
-        return downloadFromUrl(urlStr, savePath, true);
+    public static File downLoadFromUrl(String urlStr, String savePath) throws IOException {
+        return downLoadFromUrl(urlStr, savePath, true);
     }
+
 }
