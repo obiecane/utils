@@ -75,10 +75,8 @@ public class HtmlDownloader {
     }
 
 
-    public static void downloadWebSite(String index) {
-        // 将页面中所有的链接都提取出来
-        // 转换地址
-        // 过滤地址
+    public static void downloadWebSite(String indexUrl) {
+        download(indexUrl, true, true);
     }
 
 
@@ -129,7 +127,7 @@ public class HtmlDownloader {
         }
     }
 
-    public static String htmlFilename(String url) {
+    private static String htmlFilename(String url) {
         String filename = StringUtils.substringAfterLast(url, "/");
         boolean suffixValid = filename.endsWith(".html") || filename.endsWith(".htm");
         if (StringUtils.isBlank(filename) || !suffixValid) {
@@ -256,6 +254,7 @@ public class HtmlDownloader {
     }
 
 
+    @Slf4j
     private static class Page {
         Page parent;
 
@@ -421,8 +420,7 @@ public class HtmlDownloader {
 
             Elements eles = doc.body().select("a[href]");
             for (Element ele : eles) {
-                // TODO 这个替换是什么意思???
-                String absHref = ele.attr("abs:href").replaceAll("\\.\\./", "");
+                String absHref = ele.attr("abs:href");
                 String href = ele.attr("href");
                 if (href.startsWith("javascript") || href.startsWith("#") || href.contains("(")) {
                     continue;
@@ -485,13 +483,12 @@ public class HtmlDownloader {
             imgList.forEach(Resource::download);
 
 
-//            if (drillDown) {
-//                fetchSubPages();
-//                for (Page page : subPageList) {
-//                    page.repJs().repCss().repImg().repIframe().download();
-//                }
-//            }
-
+            if (drillDown) {
+                fetchSubPages();
+                for (Page page : subPageList) {
+                    page.repJs().repCss().repImg().repIframe().download();
+                }
+            }
 
             String filename = htmlFilename(getUrl());
             File baseDir = getBaseDir(this);
@@ -537,6 +534,7 @@ public class HtmlDownloader {
         }
     }
 
+    @Slf4j
     private static class Resource {
         String absUrl;
         String oriUrl;
