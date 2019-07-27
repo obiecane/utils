@@ -1,9 +1,6 @@
 package com.ahzak.utils;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -18,6 +15,21 @@ import java.net.URL;
  */
 public class TransportUtil {
 
+
+    public static File downloadFromUrl(String urlStr, String savePath, boolean overwrite) throws IOException {
+        return downloadFromUrl(urlStr, savePath, (in, out) -> {
+            try {
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, len);
+                }
+            } catch (IOException e) {
+                LambdaUtil.doThrow(e);
+            }
+        }, overwrite);
+    }
+
     /**
      * 从url中下载文件到指定的路径
      *
@@ -28,7 +40,7 @@ public class TransportUtil {
      * @author Zhu Kaixiao
      * @date 2019/7/12 9:46
      **/
-    public static File downLoadFromUrl(String urlStr, String savePath, boolean overwrite) throws IOException {
+    public static File downloadFromUrl(String urlStr, String savePath, Transporter transporter, boolean overwrite) throws IOException {
         File file = new File(savePath);
 
         if (!overwrite && file.exists()) {
@@ -44,17 +56,13 @@ public class TransportUtil {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         //设置超时间为3秒
         conn.setConnectTimeout(3 * 1000);
+        conn.setRequestProperty("Host", url.getHost());
         //防止屏蔽程序抓取而返回403错误
         conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
 
         try (InputStream inputStream = conn.getInputStream();
              FileOutputStream fos = new FileOutputStream(file)) {
-
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = inputStream.read(buffer)) != -1) {
-                fos.write(buffer, 0, len);
-            }
+            transporter.transport(inputStream, fos);
             fos.flush();
         }
 
@@ -64,14 +72,27 @@ public class TransportUtil {
 
 
     /**
-     * see {@link TransportUtil#downLoadFromUrl(String, String, boolean)}
+     * see {@link TransportUtil#downloadFromUrl(String, String, boolean)}
      *
      * @return java.io.File
      * @author Zhu Kaixiao
      * @date 2019/7/12 9:48
      **/
-    public static File downLoadFromUrl(String urlStr, String savePath) throws IOException {
-        return downLoadFromUrl(urlStr, savePath, true);
+    public static File downloadFromUrl(String urlStr, String savePath) throws IOException {
+        return downloadFromUrl(urlStr, savePath, true);
     }
+
+
+    @FunctionalInterface
+    public interface Transporter {
+
+        /**
+         * 从输入流传送到输出流
+         * @param in 输入流
+         * @param out 输出流
+         */
+        void transport(InputStream in, OutputStream out);
+    }
+
 
 }

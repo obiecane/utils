@@ -1,5 +1,6 @@
 package com.ahzak.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -12,6 +13,7 @@ import org.apache.http.util.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -32,9 +34,14 @@ import java.util.regex.Pattern;
  * @copyright 江西金磊科技发展有限公司 All rights reserved. Notice
  * 仅限于授权后使用，禁止非授权传阅以及私自用于商业目的。
  */
+@Slf4j
 public class HtmlDownloader {
 
-    private HtmlDownloader() {}
+    /** 最大下钻深度 */
+    private static final int DRILL_DOWN_DEEP = 10;
+
+    private HtmlDownloader() {
+    }
 
     private static final Pattern charsetPattern = Pattern.compile("(?i)\\bcharset=\\s*(?:\"|')?([^\\s,;\"']*)");
     private static final String[] USER_AGENTS = {
@@ -64,13 +71,21 @@ public class HtmlDownloader {
 //        download("https://new.qq.com/omn/20190725/20190725A0TD2900.html", true);
         // https://news.sina.com.cn/o/2019-07-26/doc-ihytcitm4815258.shtml
         // http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm
-        download("https://news.sina.com.cn/o/2019-07-26/doc-ihytcitm4815258.shtml", true);
+        download("http://www.qunfenxiang.net/group/", true, true);
+    }
+
+
+    public static void downloadWebSite(String index) {
+        // 将页面中所有的链接都提取出来
+        // 转换地址
+        // 过滤地址
     }
 
 
     /**
      * 下载html页面
-     * @param url 页面url
+     *
+     * @param url             页面url
      * @param resLocalization 引用资源本地化, 如果设为true, 将会把css,js,img下载到本地,并引用本地资源
      *                        如果下载失败, 将依然引用远端资源
      * @return java.lang.String
@@ -78,9 +93,15 @@ public class HtmlDownloader {
      * @date 2019/7/26 12:00
      **/
     public static String download(String url, boolean resLocalization) {
+        return download(url, resLocalization, false);
+    }
+
+
+    public static String download(String url, boolean resLocalization, boolean drillDown) {
         try {
             Document doc = doGetDocument(url);
-            String download = Page.of(doc, resLocalization).repCss().repImg().repJs().repIframe().download();
+
+            String download = Page.of(doc, resLocalization, drillDown).repCss().repImg().repJs().repIframe().download();
             return download;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -92,7 +113,7 @@ public class HtmlDownloader {
         try {
 
             Document doc = doGetDocument(url);
-            Page.of(doc, resLocalization).repCss().repImg().repJs().repIframe().download(outputStream);
+            Page.of(doc, resLocalization, false).repCss().repImg().repJs().repIframe().download(outputStream);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -101,7 +122,7 @@ public class HtmlDownloader {
     public static String getContent(String url) {
         try {
             Document doc = doGetDocument(url);
-            Page page = Page.of(doc, false);
+            Page page = Page.of(doc, false, false);
             return page.repCss().repImg().repJs().repIframe().getContent();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -227,7 +248,7 @@ public class HtmlDownloader {
         File baseDirFile = null;
         try {
             URI uri = HtmlDownloader.class.getClassLoader().getResource(".").toURI();
-            baseDirFile = new File(new File(uri) , File.separator + "static" + File.separator + page.url.getHost() + File.separator);
+            baseDirFile = new File(new File(uri), File.separator + "static" + File.separator + page.url.getHost() + File.separator);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -235,25 +256,46 @@ public class HtmlDownloader {
     }
 
 
-
     private static class Page {
+        Page parent;
+
         URL url;
-        /** 页面的Document对象 */
+        /**
+         * 页面的Document对象
+         */
         Document doc;
-        /** 引用资源本地化标志 */
+        /**
+         * 引用资源本地化标志
+         */
         boolean resLocalization;
-        /** 待下载的css */
+        /**
+         * 下钻
+         */
+        boolean drillDown;
+        /**
+         * 待下载的css
+         */
         private List<Resource> cssList = new LinkedList<>();
-        /** 待下载的js */
+        /**
+         * 待下载的js
+         */
         private List<Resource> jsList = new LinkedList<>();
-        /** 待下载的图片 */
+        /**
+         * 待下载的图片
+         */
         private List<Resource> imgList = new LinkedList<>();
-        /** 待下载的iframe */
+        /**
+         * 待下载的iframe
+         */
         private List<Page> iframeList = new LinkedList<>();
 
-        static Page of(Document doc, boolean resLocalization) {
+        private List<Page> subPageList = new LinkedList<>();
+
+        static Page of(Document doc, boolean resLocalization, boolean drillDown) {
+            Objects.requireNonNull(doc);
             Page page = new Page();
             page.resLocalization = resLocalization;
+            page.drillDown = drillDown;
             page.doc = doc;
             try {
                 page.url = new URL(doc.location());
@@ -276,10 +318,9 @@ public class HtmlDownloader {
         }
 
 
-
-
         /**
          * 把页面中引用图片的相对路径改为绝对路径
+         *
          * @return com.jeecms.collect.data.util.HtmlDownloader.Page
          * @author Zhu Kaixiao
          * @date 2019/7/25 14:56
@@ -301,6 +342,7 @@ public class HtmlDownloader {
 
         /**
          * 把页面中引用JS的相对路径改为绝对路径
+         *
          * @return com.jeecms.collect.data.util.HtmlDownloader.Page
          * @author Zhu Kaixiao
          * @date 2019/7/25 14:57
@@ -321,6 +363,7 @@ public class HtmlDownloader {
 
         /**
          * 把页面中引用CSS的相对路径改为绝对路径
+         *
          * @return com.jeecms.collect.data.util.HtmlDownloader.Page
          * @author Zhu Kaixiao
          * @date 2019/7/25 14:57
@@ -355,7 +398,7 @@ public class HtmlDownloader {
 
                 if (resLocalization) {
                     Document iframeDoc = doGetDocument(absIframeUrl);
-                    Page iPage = Page.of(iframeDoc, resLocalization);
+                    Page iPage = Page.of(iframeDoc, resLocalization, false);
                     iframeList.add(iPage);
                     //替换地址
                     iframe.attr("src", "./" + htmlFilename(absIframeUrl));
@@ -367,8 +410,66 @@ public class HtmlDownloader {
             return this;
         }
 
+
+        /**
+         * 根据a标签提取子页面
+         */
+        private void fetchSubPages() {
+            if (pageDeep() > DRILL_DOWN_DEEP) {
+                return;
+            }
+
+            Elements eles = doc.body().select("a[href]");
+            for (Element ele : eles) {
+                // TODO 这个替换是什么意思???
+                String absHref = ele.attr("abs:href").replaceAll("\\.\\./", "");
+                String href = ele.attr("href");
+                if (href.startsWith("javascript") || href.startsWith("#") || href.contains("(")) {
+                    continue;
+                }
+                URL subUrl;
+                try {
+                    subUrl = new URL(absHref);
+                    if (Objects.equals(subUrl.getHost(), url.getHost())) {
+                        Document subDoc = doGetDocument(absHref);
+                        Page subPage = Page.of(subDoc, resLocalization, drillDown);
+                        subPage.parent = this;
+                        if (!subPageExist(subPage)) {
+                            subPageList.add(subPage);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("提取子页面失败, subUrl:[{}]", absHref, e);
+                }
+            }
+        }
+
+
+        private boolean subPageExist(Page subPage) {
+            Page p = this;
+            boolean exist;
+            do {
+                exist = p.subPageList.contains(subPage);
+                p = p.parent;
+            } while (!exist && p != null);
+
+            return exist;
+        }
+
+
+        private int pageDeep() {
+            int deep = 0;
+            Page p = this;
+            do {
+                ++deep;
+                p = p.parent;
+            } while (p != null);
+            return deep;
+        }
+
         /**
          * 下载页面
+         *
          * @return java.lang.String
          * @author Zhu Kaixiao
          * @date 2019/7/25 14:57
@@ -383,9 +484,22 @@ public class HtmlDownloader {
             cssList.forEach(Resource::download);
             imgList.forEach(Resource::download);
 
+
+//            if (drillDown) {
+//                fetchSubPages();
+//                for (Page page : subPageList) {
+//                    page.repJs().repCss().repImg().repIframe().download();
+//                }
+//            }
+
+
             String filename = htmlFilename(getUrl());
             File baseDir = getBaseDir(this);
             File localPagePath = new File(baseDir, filename);
+            Elements styles = doc.select("style");
+            for (Element element : styles) {
+                Resource.downloadStyleResource(this, url, element.html());
+            }
             FileUtils.write(localPagePath, getContent(), getCharset());
             return filename;
         }
@@ -406,6 +520,20 @@ public class HtmlDownloader {
                 }
             }
             return absUrl;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof Page)) {
+                return false;
+            }
+            Page oth = (Page) obj;
+            return Objects.equals(url, oth.url);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(url);
         }
     }
 
@@ -441,7 +569,7 @@ public class HtmlDownloader {
                 if (localFile.getName().toLowerCase(Locale.ENGLISH).endsWith(".css")) {
                     downloadCss(absUrl, localFile.getCanonicalPath());
                 } else {
-                    TransportUtil.downLoadFromUrl(absUrl, localFile.getCanonicalPath());
+                    TransportUtil.downloadFromUrl(absUrl, localFile.getCanonicalPath());
                 }
             } catch (IOException e) {
                 String atteName = srcAtteName(eleNode);
@@ -449,81 +577,89 @@ public class HtmlDownloader {
             }
         }
 
-        private static Pattern p = Pattern.compile("(?<=url\\s{0,10}\\().*?(?=\\))");
+        private static Pattern CSS_RESOURCE_URL_PATTERN = Pattern.compile("(?<=url\\s{0,50}\\().*?(?=\\))");
 
 
+        /**
+         * 下载css文件
+         * 该方法会把css中引用的其他资源一并下载下来
+         *
+         * @param urlStr   css文件的url
+         * @param savePath 保存路径
+         * @throws IOException
+         */
         private void downloadCss(String urlStr, String savePath) throws IOException {
-            File file = new File(savePath);
-
-            File dir = file.getParentFile();
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-
-            URL url = new URL(urlStr);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            //设置超时间为3秒
-            conn.setConnectTimeout(3 * 1000);
-            //防止屏蔽程序抓取而返回403错误
-            conn.setRequestProperty("Host", url.getHost());
-            conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
-
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                 FileOutputStream fos = new FileOutputStream(file)) {
-                String s;
-                while ((s = reader.readLine()) != null) {
-                    Matcher matcher;
-                    int findStart = 0;
-                    while ((matcher = p.matcher(s)).find(findStart)) {
-                        String nUrl = matcher.group();
-                        if (nUrl.startsWith("\"")) {
-                            nUrl = nUrl.substring(1);
+            TransportUtil.downloadFromUrl(urlStr, savePath, (in, out) -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+                    String s;
+                    while ((s = reader.readLine()) != null) {
+                        try {
+                            downloadStyleResource(page, new URL(absUrl), s);
+                        } catch (Exception ignore) {
                         }
-                        if (nUrl.endsWith("\"")) {
-                            nUrl = nUrl.substring(0, nUrl.length() - 1);
-                        }
-                        if (nUrl.contains("?")) {
-                            nUrl = nUrl.split("\\?")[0];
-                        }
-
-                        if (!nUrl.startsWith("http")) {
-                            if (nUrl.startsWith("//")) {
-                                nUrl = "http:" + nUrl;
-                            } else {
-                                // 修补url
-                                nUrl = "/" + StringUtils.substringBeforeLast(url.getFile(), "/") + "/" + nUrl;
-                                nUrl = nUrl.replaceAll("/\\./", "/");
-                                nUrl = nUrl.replaceAll("/[^/]+?/\\.\\./", "/");
-                                nUrl = url.getHost() + (url.getPort() == -1 ? "" : ":" + url.getPort()) + "/" + nUrl;
-                                nUrl = nUrl.replaceAll("//+", "/");
-                                nUrl = url.getProtocol() + "://" + nUrl;
-                            }
-                            // 下载
-                            File baseDir = getBaseDir(page);
-                            File localFile = new File(baseDir, getLocalRelFilename(nUrl));
-                            try {
-                                TransportUtil.downLoadFromUrl(nUrl, localFile.getCanonicalPath(), false);
-                                // 因为目录层级和远端保持一致, 所以不需要替换引用
-                            } catch (Exception e) {
-                                if (!(e instanceof IllegalArgumentException)) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-
-                        findStart = matcher.end();
+                        s += "\n";
+                        byte[] buffer = s.getBytes();
+                        out.write(buffer, 0, buffer.length);
                     }
-
-                    s += "\n";
-                    byte[] buffer = s.getBytes();
-                    fos.write(buffer, 0, buffer.length);
+                } catch (Exception e) {
+                    LambdaUtil.doThrow(e);
                 }
-                fos.flush();
-            }
-
-            System.out.println("info:" + url + " download success");
+            }, true);
         }
+
+
+        /**
+         * 下载css内容中引用的资源
+         *
+         * @param parentUrl css样式所在的文件的url
+         * @param styleStr  css内容
+         * @throws IOException
+         */
+        static void downloadStyleResource(Page page, URL parentUrl, String styleStr) throws IOException {
+            Matcher matcher;
+            int findStart = 0;
+            while ((matcher = CSS_RESOURCE_URL_PATTERN.matcher(styleStr)).find(findStart)) {
+                String nUrl = matcher.group();
+                if (nUrl.startsWith("\"") || nUrl.startsWith("'")) {
+                    nUrl = nUrl.substring(1);
+                }
+                if (nUrl.endsWith("\"") || nUrl.endsWith("'")) {
+                    nUrl = nUrl.substring(0, nUrl.length() - 1);
+                }
+                if (nUrl.contains("?")) {
+                    nUrl = nUrl.split("\\?")[0];
+                }
+
+                if (!nUrl.startsWith("http")) {
+                    if (nUrl.startsWith("//")) {
+                        nUrl = "http:" + nUrl;
+                    } else {
+                        // 修补url
+                        nUrl = "/" + StringUtils.substringBeforeLast(parentUrl.getFile(), "/") + "/" + nUrl;
+                        nUrl = nUrl.replaceAll("/\\./", "/");
+                        nUrl = nUrl.replaceAll("/[^/]+?/\\.\\./", "/");
+                        nUrl = parentUrl.getHost() + (parentUrl.getPort() == -1 ? "" : ":" + parentUrl.getPort()) + "/" + nUrl;
+                        nUrl = nUrl.replaceAll("//+", "/");
+                        nUrl = parentUrl.getProtocol() + "://" + nUrl;
+                    }
+                    // 下载
+                    File baseDir = getBaseDir(page);
+                    File localFile = new File(baseDir, getLocalRelFilename(nUrl));
+                    try {
+                        TransportUtil.downloadFromUrl(nUrl, localFile.getCanonicalPath(), false);
+                        // 因为目录层级和远端保持一致, 所以不需要替换引用
+                    } catch (RuntimeException e) {
+                        if (!(e instanceof IllegalArgumentException)) {
+                            log.warn("引用资源下载异常， url:[{}] localFile:[{}]", nUrl, localFile, e);
+                        }
+                        throw e;
+                    }
+                }
+
+                findStart = matcher.end();
+            }
+        }
+
 
         private static String srcAtteName(Element eleNode) {
             String atteName;

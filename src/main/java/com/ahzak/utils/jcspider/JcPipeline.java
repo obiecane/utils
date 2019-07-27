@@ -1,12 +1,9 @@
 package com.ahzak.utils.jcspider;
 
-import com.jeecms.collect.data.service.WebLogsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import us.codecraft.webmagic.ResultItems;
 import us.codecraft.webmagic.Task;
 import us.codecraft.webmagic.pipeline.Pipeline;
 
-import javax.annotation.PostConstruct;
 
 /**
  * @author Zhu Kaixiao
@@ -17,18 +14,9 @@ import javax.annotation.PostConstruct;
  */
 public abstract class JcPipeline extends AbstractPauseable implements Pipeline {
 
-    @Autowired
-    protected WebLogsService webLogsService;
-    private static WebLogsService WEBLOGSSERVICE;
 
-    @PostConstruct
-    private void initAutowired() {
-        WEBLOGSSERVICE = webLogsService;
-    }
 
-    protected JcPipeline() {
-        webLogsService = WEBLOGSSERVICE;
-    }
+
 
     /**
      * 处理页面的方法

@@ -1,14 +1,9 @@
 package com.ahzak.utils.jcspider;
 
-import com.jeecms.collect.data.context.CollectTaskContext;
-import com.jeecms.collect.data.service.WebLogsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
 
-import javax.annotation.PostConstruct;
-import java.util.Arrays;
 
 /**
  * @author Zhu Kaixiao
@@ -19,29 +14,17 @@ import java.util.Arrays;
  */
 public abstract class JcPageProcessor extends AbstractPauseable implements PageProcessor {
 
-    @Autowired
-    protected WebLogsService webLogsService;
-    private static WebLogsService WEBLOGSSERVICE;
-
     protected String loginUser;
     protected Integer collectTaskId;
 
-    @PostConstruct
-    private void initAutowired() {
-        WEBLOGSSERVICE = webLogsService;
-    }
-
-    protected JcPageProcessor() {
-        webLogsService = WEBLOGSSERVICE;
-    }
 
 
     /** 抓取网站的相关配置。 */
-    private Site site = JcSpiderSite.me()
-            .setUserAgentList(Arrays.asList(CollectTaskContext.USER_AGENTS))//UserAgent
-            .setCharset(CollectTaskContext.CHARSET_DEFAULT_VALUE)//编码
-            .setSleepTime(CollectTaskContext.SLEEP_TIME_MILLISECOND_DEFAULT_NUM)//抓取间隔
-            .setRetryTimes(CollectTaskContext.RETRY_TIMES_DEFAULT_NUM);//重试次数
+    private Site site = JcSpiderSite.me();
+//            .setUserAgentList(Arrays.asList(CollectTaskContext.USER_AGENTS))//UserAgent
+//            .setCharset(CollectTaskContext.CHARSET_DEFAULT_VALUE)//编码
+//            .setSleepTime(CollectTaskContext.SLEEP_TIME_MILLISECOND_DEFAULT_NUM)//抓取间隔
+//            .setRetryTimes(CollectTaskContext.RETRY_TIMES_DEFAULT_NUM);//重试次数
 
 
     @Override
@@ -94,7 +77,6 @@ public abstract class JcPageProcessor extends AbstractPauseable implements PageP
     protected void beforeProcess(JcPage page) {
         checkPause();
 
-        webLogsService.output(pageLog(loginUser, page));
     }
 
     /**
