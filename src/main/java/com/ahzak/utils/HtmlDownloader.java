@@ -71,14 +71,7 @@ public class HtmlDownloader {
 ////        download("https://new.qq.com/omn/20190725/20190725A0TD2900.html", true);
 //        // https://news.sina.com.cn/o/2019-07-26/doc-ihytcitm4815258.shtml
 //        // http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm
-//        download("http://www.qunfenxiang.net/group/", true, true);
-
-        String url = "asd";
-        Random random = new Random(url.hashCode());
-        int i = random.nextInt();
-        System.out.println(i);
-        String s = UUID.nameUUIDFromBytes(Integer.valueOf(i).toString().getBytes()).toString();
-        System.out.println(s);
+        download("http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm", true, false);
     }
 
 
@@ -659,12 +652,18 @@ public class HtmlDownloader {
                     nUrl = nUrl.split("\\?")[0];
                 }
 
+
                 if (!nUrl.startsWith("http")) {
+                    // 修补url
                     if (nUrl.startsWith("//")) {
-                        nUrl = "http:" + nUrl;
+                        nUrl = parentUrl.getProtocol() + ":" + nUrl;
+                    } else if (nUrl.startsWith("://")) {
+                        nUrl = parentUrl.getProtocol() + nUrl;
                     } else {
-                        // 修补url
-                        nUrl = "/" + StringUtils.substringBeforeLast(parentUrl.getFile(), "/") + "/" + nUrl;
+                        if (!nUrl.startsWith("/")) {
+                            nUrl = "/" + StringUtils.substringBeforeLast(parentUrl.getFile(), "/") + "/" + nUrl;
+                        }
+
                         nUrl = nUrl.replaceAll("/\\./", "/");
                         nUrl = nUrl.replaceAll("/[^/]+?/\\.\\./", "/");
                         nUrl = parentUrl.getHost() + (parentUrl.getPort() == -1 ? "" : ":" + parentUrl.getPort()) + "/" + nUrl;
@@ -677,11 +676,11 @@ public class HtmlDownloader {
                     try {
                         TransportUtil.downloadFromUrl(nUrl, localFile.getCanonicalPath(), false);
                         // 因为目录层级和远端保持一致, 所以不需要替换引用
-                    } catch (RuntimeException e) {
+                    } catch (Exception e) {
                         if (!(e instanceof IllegalArgumentException)) {
                             log.warn("引用资源下载异常， url:[{}] localFile:[{}]", nUrl, localFile, e);
+//                            throw e;
                         }
-                        throw e;
                     }
                 }
 
