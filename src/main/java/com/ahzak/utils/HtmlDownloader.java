@@ -68,10 +68,17 @@ public class HtmlDownloader {
     private static boolean resLocalization = false;
 
     public static void main(String[] args) throws IOException {
-//        download("https://new.qq.com/omn/20190725/20190725A0TD2900.html", true);
-        // https://news.sina.com.cn/o/2019-07-26/doc-ihytcitm4815258.shtml
-        // http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm
-        download("http://www.qunfenxiang.net/group/", true, true);
+////        download("https://new.qq.com/omn/20190725/20190725A0TD2900.html", true);
+//        // https://news.sina.com.cn/o/2019-07-26/doc-ihytcitm4815258.shtml
+//        // http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm
+//        download("http://www.qunfenxiang.net/group/", true, true);
+
+        String url = "asd";
+        Random random = new Random(url.hashCode());
+        int i = random.nextInt();
+        System.out.println(i);
+        String s = UUID.nameUUIDFromBytes(Integer.valueOf(i).toString().getBytes()).toString();
+        System.out.println(s);
     }
 
 
@@ -138,7 +145,11 @@ public class HtmlDownloader {
         String filename = StringUtils.substringAfterLast(url, "/");
         boolean suffixValid = filename.endsWith(".html") || filename.endsWith(".htm");
         if (StringUtils.isBlank(filename) || !suffixValid) {
-            filename = randomHtmlName();
+
+            Random random = new Random(url.hashCode());
+            int randomInt = random.nextInt();
+            filename = UUID.nameUUIDFromBytes(Integer.valueOf(randomInt).toString().getBytes())
+                    .toString().replaceAll("-", "") + ".html";
         }
         return filename;
     }
@@ -244,10 +255,6 @@ public class HtmlDownloader {
         return doc;
     }
 
-
-    private static String randomHtmlName() {
-        return UUID.randomUUID().toString().replaceAll("-", "") + ".html";
-    }
 
     private static File getBaseDir(Page page) {
         File baseDirFile = null;
@@ -442,6 +449,8 @@ public class HtmlDownloader {
                         if (!subPageExist(subPage)) {
                             subPageList.add(subPage);
                         }
+                        // 替换引用
+                        ele.attr("href", "./" + htmlFilename(absHref));
                     }
                 } catch (Exception e) {
                     log.warn("提取子页面失败, subUrl:[{}]", absHref, e);
@@ -451,14 +460,29 @@ public class HtmlDownloader {
 
 
         private boolean subPageExist(Page subPage) {
-            Page p = this;
-            boolean exist;
-            do {
-                exist = p.subPageList.contains(subPage);
-                p = p.parent;
-            } while (!exist && p != null);
+            Page root = this;
+            while (root.parent != null) {
+                root = root.parent;
+            }
 
-            return exist;
+            return checkSubPageExist(root, subPage);
+        }
+
+
+        private boolean checkSubPageExist(Page root, Page subPage) {
+            boolean ret = false;
+            if (root != null) {
+
+                for (Page page : root.subPageList) {
+                    ret = checkSubPageExist(page, subPage);
+                    if (ret) {
+                        return true;
+                    }
+                }
+
+                ret = root.equals(subPage) || root.subPageList.contains(subPage);
+            }
+            return ret;
         }
 
 
