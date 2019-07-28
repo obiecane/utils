@@ -95,6 +95,13 @@ public class HtmlDownloader {
     }
 
 
+    /**
+     * 下载网页页面
+     * @param url 网页的链接
+     * @param resLocalization 资源本地化 如果设置为true，将会把页面中引用的css，js，图片一并下载下来， 并替换页面中的引用
+     * @param drillDown 下钻  如果设置为true，把根据a标签把子页面也下载下来
+     * @return
+     */
     public static String download(String url, boolean resLocalization, boolean drillDown) {
         try {
             Document doc = doGetDocument(url);

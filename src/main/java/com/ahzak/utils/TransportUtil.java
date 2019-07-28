@@ -1,5 +1,7 @@
 package com.ahzak.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -13,9 +15,17 @@ import java.net.URL;
  * @copyright 江西金磊科技发展有限公司 All rights reserved. Notice
  * 仅限于授权后使用，禁止非授权传阅以及私自用于商业目的。
  */
+@Slf4j
 public class TransportUtil {
 
 
+    /**
+     * see {@link #downloadFromUrl(String, String, Transporter, boolean)}
+     *
+     * @return java.io.File
+     * @author Zhu Kaixiao
+     * @date 2019/7/12 9:48
+     */
     public static File downloadFromUrl(String urlStr, String savePath, boolean overwrite) throws IOException {
         return downloadFromUrl(urlStr, savePath, (in, out) -> {
             try {
@@ -35,11 +45,12 @@ public class TransportUtil {
      *
      * @param urlStr url
      * @param savePath 文件保存路径
+     * @param transporter 传输器  可用于指定具体的传输过程
      * @param overwrite 是否覆盖原文件
      * @return java.io.File 已下载完成的文件
      * @author Zhu Kaixiao
      * @date 2019/7/12 9:46
-     **/
+     */
     public static File downloadFromUrl(String urlStr, String savePath, Transporter transporter, boolean overwrite) throws IOException {
         File file = new File(savePath);
 
@@ -66,18 +77,18 @@ public class TransportUtil {
             fos.flush();
         }
 
-        System.out.println("info:" + url + " download success");
+        log.debug("{} download success", url);
         return file;
     }
 
 
     /**
-     * see {@link TransportUtil#downloadFromUrl(String, String, boolean)}
+     * see {@link #downloadFromUrl(String, String, Transporter, boolean)}
      *
      * @return java.io.File
      * @author Zhu Kaixiao
      * @date 2019/7/12 9:48
-     **/
+     */
     public static File downloadFromUrl(String urlStr, String savePath) throws IOException {
         return downloadFromUrl(urlStr, savePath, true);
     }
