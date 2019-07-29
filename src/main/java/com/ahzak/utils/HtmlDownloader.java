@@ -49,7 +49,8 @@ public class HtmlDownloader {
     private HtmlDownloader() {
     }
 
-    private static final Pattern charsetPattern = Pattern.compile("(?i)\\bcharset=\\s*(?:\"|')?([^\\s,;\"']*)");
+    private static final Pattern charsetPattern = Pattern.compile("(?i)\\bcharset=\\s*[\"']?([^\\s,;\"']*)");
+    private static final Pattern CSS_RESOURCE_URL_PATTERN = Pattern.compile("(?<=url\\s{0,50}\\().*?(?=\\))");
     private static final String[] USER_AGENTS = {
             "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 OPR/26.0.1656.60",
             "Opera/8.0 (Windows NT 5.1; U; en)",
@@ -192,7 +193,7 @@ public class HtmlDownloader {
         boolean suffixValid = filename.endsWith(".html") || filename.endsWith(".htm");
         if (StringUtils.isBlank(filename) || !suffixValid) {
             if (filename.contains(".")) {
-                filename = filename.split(".")[0];
+                filename = filename.split("\\.")[0];
             } else {
                 Random random = new Random(url.hashCode());
                 int randomInt = random.nextInt();
@@ -727,7 +728,7 @@ public class HtmlDownloader {
             }
         }
 
-        private static Pattern CSS_RESOURCE_URL_PATTERN = Pattern.compile("(?<=url\\s{0,50}\\().*?(?=\\))");
+
 
 
         /**
