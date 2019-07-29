@@ -36,10 +36,14 @@ import java.util.regex.Pattern;
 @Slf4j
 public class HtmlDownloader {
 
-    /** 最大下钻深度 */
+    /**
+     * 最大下钻深度
+     */
     private static final int DRILL_DOWN_DEEP = 10;
 
-    /** 指定的编码, 下载的页面都会被转换成该编码 */
+    /**
+     * 指定的编码, 下载的页面都会被转换成该编码
+     */
     private static final String SPECIFIC_CHARSET_NAME = "UTF-8";
 
     private HtmlDownloader() {
@@ -67,7 +71,6 @@ public class HtmlDownloader {
     };
 
 
-
     public static void main(String[] args) {
         // http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm
         // https://new.qq.com/omn/20190729/20190729A03AMJ00.html
@@ -77,6 +80,7 @@ public class HtmlDownloader {
 
     /**
      * 整站下载
+     *
      * @param indexUrl 站点首页链接
      * @author Zhu Kaixiao
      * @date 2019/7/29 16:26
@@ -101,12 +105,12 @@ public class HtmlDownloader {
     }
 
 
-
     /**
      * 下载网页页面
-     * @param url 网页的链接
+     *
+     * @param url             网页的链接
      * @param resLocalization 资源本地化 如果设置为true，将会把页面中引用的css，js，图片一并下载下来， 并替换页面中的引用
-     * @param drillDown 下钻  如果设置为true，把根据a标签把子页面也下载下来
+     * @param drillDown       下钻  如果设置为true，把根据a标签把子页面也下载下来
      * @return java.lang.String
      * @author Zhu Kaixiao
      * @date 2019/7/29 16:25
@@ -130,7 +134,8 @@ public class HtmlDownloader {
     /**
      * 把链接的页面中的内容写出到指定的输出流中
      * 该内容是替换css, js, img, iframe引用为绝对路径之后的内容
-     * @param url 链接
+     *
+     * @param url          链接
      * @param outputStream 输出流
      * @author Zhu Kaixiao
      * @date 2019/7/29 16:23
@@ -152,6 +157,7 @@ public class HtmlDownloader {
     /**
      * 获取指定链接的页面中的内容
      * 该内容是替换css, js, img, iframe引用为绝对路径之后的内容
+     *
      * @param url 链接
      * @return java.lang.String 页面内容
      * @author Zhu Kaixiao
@@ -174,7 +180,7 @@ public class HtmlDownloader {
      * 自动生成的文件名与链接具有映射关系, 同一个链接生成的文件名总是相同的
      * 注意: 不同的链接也可能会有相同的文件名
      * 如 www.baidu.com/index.html       ->      index.html
-     *    www.baidu.com/tmp/index.html   ->      index.html
+     * www.baidu.com/tmp/index.html   ->      index.html
      *
      * @param url 链接
      * @return java.lang.String
@@ -200,6 +206,7 @@ public class HtmlDownloader {
 
     /**
      * 从contentType中提取字符集名称
+     *
      * @param contentType contentType
      * @return java.lang.String
      * @author Zhu Kaixiao
@@ -238,6 +245,7 @@ public class HtmlDownloader {
     /**
      * 根据url解析Jsoup的document对象
      * 这个方法会自动识别html的编码
+     *
      * @param urlStr 链接
      * @return org.jsoup.nodes.Document
      * @author Zhu Kaixiao
@@ -270,7 +278,7 @@ public class HtmlDownloader {
 
                         String charsetName = getCharsetFromContentType(contentType);
                         if (charsetName == null) {
-                            charsetName = "utf-8";
+                            charsetName = "UTF-8";
                             Charset utf8 = Charset.forName(charsetName);
                             String docData = Charset.forName(charsetName).decode(bf).toString();
                             doc = Jsoup.parse(docData, urlStr);
@@ -316,7 +324,8 @@ public class HtmlDownloader {
 
     /**
      * 把页面转换成指定的字符集编码
-     * @param doc 页面对象
+     *
+     * @param doc         页面对象
      * @param charsetName 字符集名称
      * @return org.jsoup.nodes.Document
      * @author Zhu Kaixiao
@@ -339,6 +348,7 @@ public class HtmlDownloader {
 
     /**
      * 获取下载保存的基础目录
+     *
      * @param page 页面
      * @return java.io.File
      * @author Zhu Kaixiao
@@ -358,10 +368,14 @@ public class HtmlDownloader {
 
     @Slf4j
     private static class Page {
-        /** 父页面, 如果当前页面是通过父页面中的a标签下钻提取的, 则指向父页面 */
+        /**
+         * 父页面, 如果当前页面是通过父页面中的a标签下钻提取的, 则指向父页面
+         */
         Page parent;
 
-        /** 该页面的链接 */
+        /**
+         * 该页面的链接
+         */
         URL url;
         /**
          * 页面的Document对象
@@ -392,7 +406,9 @@ public class HtmlDownloader {
          */
         private List<Page> iframeList = new LinkedList<>();
 
-        /** 子页面集合, 通过a标签提取 */
+        /**
+         * 子页面集合, 通过a标签提取
+         */
         private List<Page> subPageList = new LinkedList<>();
 
         static Page of(Document doc, boolean resLocalization, boolean drillDown) {
@@ -549,7 +565,9 @@ public class HtmlDownloader {
             }
         }
 
-        /** 判断指定子页面是否存在 */
+        /**
+         * 判断指定子页面是否存在
+         */
         private boolean subPageExist(Page subPage) {
             Page root = this;
             while (root.parent != null) {
@@ -559,7 +577,9 @@ public class HtmlDownloader {
             return checkSubPageExist(root, subPage);
         }
 
-        /** 判断指定子页面在指定的根页面中是否存在 */
+        /**
+         * 判断指定子页面在指定的根页面中是否存在
+         */
         private boolean checkSubPageExist(Page root, Page subPage) {
             boolean ret = false;
             if (root != null) {
@@ -576,7 +596,9 @@ public class HtmlDownloader {
             return ret;
         }
 
-        /** 获取下钻深度 */
+        /**
+         * 获取下钻深度
+         */
         private int pageDeep() {
             int deep = 0;
             Page p = this;
@@ -629,6 +651,7 @@ public class HtmlDownloader {
 
         /**
          * 修复绝对路径
+         *
          * @param oriUrl 原始路径
          * @param absUrl 绝对路径
          * @return java.lang.String
