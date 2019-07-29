@@ -16,7 +16,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -39,6 +38,9 @@ public class HtmlDownloader {
 
     /** 最大下钻深度 */
     private static final int DRILL_DOWN_DEEP = 10;
+
+    /** 指定的编码, 下载的页面都会被转换成该编码 */
+    private static final String SPECIFIC_CHARSET_NAME = "UTF-8";
 
     private HtmlDownloader() {
     }
@@ -64,17 +66,21 @@ public class HtmlDownloader {
             "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0; SV1; QQDownload 732; .NET4.0C; .NET4.0E; SE 2.X MetaSr 1.0) ",
     };
 
-    // 引用资源本地化
-    private static boolean resLocalization = false;
 
-    public static void main(String[] args) throws IOException {
-////        download("https://new.qq.com/omn/20190725/20190725A0TD2900.html", true);
-//        // https://news.sina.com.cn/o/2019-07-26/doc-ihytcitm4815258.shtml
-//        // http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm
-        download("http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm", true, false);
+
+    public static void main(String[] args) {
+        // http://www.gov.cn/guowuyuan/2019-07/25/content_5415268.htm
+        // https://new.qq.com/omn/20190729/20190729A03AMJ00.html
+        download("https://new.qq.com/omn/20190729/20190729A03AMJ00.html", false, false);
     }
 
 
+    /**
+     * 整站下载
+     * @param indexUrl 站点首页链接
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 16:26
+     **/
     public static void downloadWebSite(String indexUrl) {
         download(indexUrl, true, true);
     }
@@ -95,18 +101,25 @@ public class HtmlDownloader {
     }
 
 
+
     /**
      * 下载网页页面
      * @param url 网页的链接
      * @param resLocalization 资源本地化 如果设置为true，将会把页面中引用的css，js，图片一并下载下来， 并替换页面中的引用
      * @param drillDown 下钻  如果设置为true，把根据a标签把子页面也下载下来
-     * @return
-     */
+     * @return java.lang.String
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 16:25
+     **/
     public static String download(String url, boolean resLocalization, boolean drillDown) {
         try {
-            Document doc = doGetDocument(url);
-
-            String download = Page.of(doc, resLocalization, drillDown).repCss().repImg().repJs().repIframe().download();
+            Document doc = convert2SpecificCharset(doGetDocument(url), SPECIFIC_CHARSET_NAME);
+            String download = Page.of(doc, resLocalization, drillDown)
+                    .repCss()
+                    .repImg()
+                    .repJs()
+                    .repIframe()
+                    .download();
             return download;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -114,19 +127,39 @@ public class HtmlDownloader {
     }
 
 
-    public static void download(String url, OutputStream outputStream, boolean resLocalization) {
+    /**
+     * 把链接的页面中的内容写出到指定的输出流中
+     * 该内容是替换css, js, img, iframe引用为绝对路径之后的内容
+     * @param url 链接
+     * @param outputStream 输出流
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 16:23
+     **/
+    public static void download(String url, OutputStream outputStream) {
         try {
-
-            Document doc = doGetDocument(url);
-            Page.of(doc, resLocalization, false).repCss().repImg().repJs().repIframe().download(outputStream);
+            Document doc = convert2SpecificCharset(doGetDocument(url), SPECIFIC_CHARSET_NAME);
+            Page.of(doc, false, false)
+                    .repCss()
+                    .repImg()
+                    .repJs()
+                    .repIframe()
+                    .download(outputStream);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * 获取指定链接的页面中的内容
+     * 该内容是替换css, js, img, iframe引用为绝对路径之后的内容
+     * @param url 链接
+     * @return java.lang.String 页面内容
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 16:22
+     **/
     public static String getContent(String url) {
         try {
-            Document doc = doGetDocument(url);
+            Document doc = convert2SpecificCharset(doGetDocument(url), SPECIFIC_CHARSET_NAME);
             Page page = Page.of(doc, false, false);
             return page.repCss().repImg().repJs().repIframe().getContent();
         } catch (Exception e) {
@@ -134,19 +167,44 @@ public class HtmlDownloader {
         }
     }
 
-    private static String htmlFilename(String url) {
+    /**
+     * 根据链接生成html的文件名
+     * 如果该链接中有文件名(如: www.baidu.com/name.html)则使用原有的,
+     * 如果链接中没有文件名(如: www.baidu.com/tmp/) 则自动生成文件名
+     * 自动生成的文件名与链接具有映射关系, 同一个链接生成的文件名总是相同的
+     * 注意: 不同的链接也可能会有相同的文件名
+     * 如 www.baidu.com/index.html       ->      index.html
+     *    www.baidu.com/tmp/index.html   ->      index.html
+     *
+     * @param url 链接
+     * @return java.lang.String
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 16:13
+     **/
+    public static String htmlFilename(String url) {
         String filename = StringUtils.substringAfterLast(url, "/");
         boolean suffixValid = filename.endsWith(".html") || filename.endsWith(".htm");
         if (StringUtils.isBlank(filename) || !suffixValid) {
-
-            Random random = new Random(url.hashCode());
-            int randomInt = random.nextInt();
-            filename = UUID.nameUUIDFromBytes(Integer.valueOf(randomInt).toString().getBytes())
-                    .toString().replaceAll("-", "") + ".html";
+            if (filename.contains(".")) {
+                filename = filename.split(".")[0];
+            } else {
+                Random random = new Random(url.hashCode());
+                int randomInt = random.nextInt();
+                filename = UUID.nameUUIDFromBytes(Integer.valueOf(randomInt).toString().getBytes())
+                        .toString().replaceAll("-", "");
+            }
+            filename += ".html";
         }
         return filename;
     }
 
+    /**
+     * 从contentType中提取字符集名称
+     * @param contentType contentType
+     * @return java.lang.String
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 16:12
+     **/
     private static String getCharsetFromContentType(String contentType) {
         if (contentType == null) {
             return null;
@@ -177,6 +235,14 @@ public class HtmlDownloader {
         }
     }
 
+    /**
+     * 根据url解析Jsoup的document对象
+     * 这个方法会自动识别html的编码
+     * @param urlStr 链接
+     * @return org.jsoup.nodes.Document
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 16:11
+     **/
     private static Document doGetDocument(String urlStr) {
         Document doc = null;
         try {
@@ -204,35 +270,35 @@ public class HtmlDownloader {
 
                         String charsetName = getCharsetFromContentType(contentType);
                         if (charsetName == null) {
-                            String docData = Charset.forName("UTF-8").decode(bf).toString();
+                            charsetName = "utf-8";
+                            Charset utf8 = Charset.forName(charsetName);
+                            String docData = Charset.forName(charsetName).decode(bf).toString();
                             doc = Jsoup.parse(docData, urlStr);
+                            doc.charset(utf8);
                             Element meta = doc.select("meta[http-equiv=content-type], meta[charset]").first();
                             if (meta != null) {
-                                String foundCharset = null;
                                 if (meta.hasAttr("http-equiv")) {
-                                    foundCharset = getCharsetFromContentType(meta.attr("content"));
+                                    charsetName = getCharsetFromContentType(meta.attr("content"));
                                 }
 
-                                if (foundCharset == null && meta.hasAttr("charset")) {
+                                if (charsetName == null && meta.hasAttr("charset")) {
                                     try {
                                         if (Charset.isSupported(meta.attr("charset"))) {
-                                            foundCharset = meta.attr("charset");
+                                            charsetName = meta.attr("charset");
                                         }
                                     } catch (IllegalCharsetNameException var9) {
-                                        foundCharset = null;
+                                        charsetName = null;
                                     }
                                 }
 
-                                if (StringUtils.isNotBlank(foundCharset) && !"UTF-8".equals(foundCharset)) {
-                                    foundCharset = foundCharset.trim().replaceAll("[\"']", "");
+                                if (StringUtils.isNotBlank(charsetName) && !"UTF-8".equalsIgnoreCase(charsetName)) {
+                                    charsetName = charsetName.trim().replaceAll("[\"']", "");
                                     bf.rewind();
-                                    Charset charset = Charset.forName(foundCharset);
-                                    docData = charset.decode(bf).toString();
-                                    doc = Jsoup.parse(docData, urlStr);
-                                    doc.charset(charset);
                                 }
                             }
-                        } else {
+                        }
+
+                        if (doc == null || StringUtils.isNotBlank(charsetName) && !"UTF-8".equalsIgnoreCase(charsetName)) {
                             Charset charset = Charset.forName(charsetName);
                             String docData = charset.decode(bf).toString();
                             doc = Jsoup.parse(docData, urlStr);
@@ -248,7 +314,36 @@ public class HtmlDownloader {
         return doc;
     }
 
+    /**
+     * 把页面转换成指定的字符集编码
+     * @param doc 页面对象
+     * @param charsetName 字符集名称
+     * @return org.jsoup.nodes.Document
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 15:58
+     **/
+    private static Document convert2SpecificCharset(Document doc, String charsetName) {
+        Elements elements = doc.select("meta[http-equiv=content-type], meta[charset]");
+        for (Element meta : elements) {
+            if (meta != null) {
+                if (meta.hasAttr("http-equiv")) {
+                    meta.attr("content", "text/html; charset=" + charsetName);
+                } else if (meta.hasAttr("charset")) {
+                    meta.attr("charset", charsetName);
+                }
+            }
+        }
+        doc.charset(Charset.forName(charsetName));
+        return doc;
+    }
 
+    /**
+     * 获取下载保存的基础目录
+     * @param page 页面
+     * @return java.io.File
+     * @author Zhu Kaixiao
+     * @date 2019/7/29 16:11
+     **/
     private static File getBaseDir(Page page) {
         File baseDirFile = null;
         try {
@@ -263,8 +358,10 @@ public class HtmlDownloader {
 
     @Slf4j
     private static class Page {
+        /** 父页面, 如果当前页面是通过父页面中的a标签下钻提取的, 则指向父页面 */
         Page parent;
 
+        /** 该页面的链接 */
         URL url;
         /**
          * 页面的Document对象
@@ -295,6 +392,7 @@ public class HtmlDownloader {
          */
         private List<Page> iframeList = new LinkedList<>();
 
+        /** 子页面集合, 通过a标签提取 */
         private List<Page> subPageList = new LinkedList<>();
 
         static Page of(Document doc, boolean resLocalization, boolean drillDown) {
@@ -451,7 +549,7 @@ public class HtmlDownloader {
             }
         }
 
-
+        /** 判断指定子页面是否存在 */
         private boolean subPageExist(Page subPage) {
             Page root = this;
             while (root.parent != null) {
@@ -461,7 +559,7 @@ public class HtmlDownloader {
             return checkSubPageExist(root, subPage);
         }
 
-
+        /** 判断指定子页面在指定的根页面中是否存在 */
         private boolean checkSubPageExist(Page root, Page subPage) {
             boolean ret = false;
             if (root != null) {
@@ -478,7 +576,7 @@ public class HtmlDownloader {
             return ret;
         }
 
-
+        /** 获取下钻深度 */
         private int pageDeep() {
             int deep = 0;
             Page p = this;
@@ -529,7 +627,14 @@ public class HtmlDownloader {
             IOUtils.write(getContent(), outputStream, getCharset());
         }
 
-
+        /**
+         * 修复绝对路径
+         * @param oriUrl 原始路径
+         * @param absUrl 绝对路径
+         * @return java.lang.String
+         * @author Zhu Kaixiao
+         * @date 2019/7/29 16:32
+         **/
         private String fixAbsUrl(String oriUrl, String absUrl) {
             if (StringUtils.isBlank(absUrl)) {
                 if (absUrl.startsWith("//")) {
@@ -537,7 +642,7 @@ public class HtmlDownloader {
                 } else if (absUrl.startsWith("/")) {
                     absUrl = url.getProtocol() + "://" + url.getHost() + (url.getPort() == -1 ? "" : ":" + url.getPort()) + oriUrl;
                 } else {
-                    System.err.println("获取绝对路径失败");
+                    log.error("获取绝对路径失败");
                 }
             }
             return absUrl;
