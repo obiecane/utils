@@ -73,9 +73,9 @@ public class EncodeUtils {
      * @author Zhu Kaixiao
      * @date 2019/9/18 17:19
      **/
-    public static String paramDecrypt(String key, String value)   {
+    public static String paramDecrypt(String key, String value) throws Exception {
         if (value.length() % 6 > 0) {
-            throw new RuntimeException("内容被篡改");
+            throw new Exception("内容被篡改");
         }
         char[] chars = value.toCharArray();
 
@@ -98,7 +98,7 @@ public class EncodeUtils {
                 } else if (ch == '*') {
                     n = 9 + 26 + 26 + 2;
                 } else {
-                    throw new RuntimeException("内容被篡改");
+                    throw new Exception("内容被篡改");
                 }
                 arr[j] = n;
             }
@@ -122,8 +122,8 @@ public class EncodeUtils {
         }
 
         int i;
-        for (i = content.length; i >= 0; i--) {
-            if (content[i - 1] != 0) {
+        for (i = content.length; content.length > 0 && i >= 0; i--) {
+            if (i != 0 && content[i - 1] != 0) {
                 break;
             }
         }
