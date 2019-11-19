@@ -50,7 +50,7 @@ class DelayTimer {
     }
 
 
-    private class Dial {
+    private static class Dial {
         Queue<DelayTask>[] taskSlot;
         int currentIndex;
 
@@ -63,7 +63,7 @@ class DelayTimer {
     }
 
 
-    public void addDelayTask(DelayTask delayTask) {
+    void addDelayTask(DelayTask delayTask) {
         int slot = (int) (delayTask.getDelay() % 3600 + dial.currentIndex);
         dial.taskSlot[slot].add(delayTask);
     }
