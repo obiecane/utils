@@ -22,14 +22,15 @@ public class DelayTaskUtil {
 
 
     public static void main(String[] args) throws InterruptedException {
-        long aaa = System.currentTimeMillis();
-        System.out.println(aaa);
-        DelayTaskUtil.addDelayTask(new DelayTask(5, () -> {
-            long currentTimeMillis = System.currentTimeMillis();
-            System.out.println(currentTimeMillis);
-        }));
+        while (true) {
+            Thread.sleep(1000);
+            DelayTaskUtil.addDelayTask(new DelayTask((long) (Math.random() * 100), () -> {
+                long currentTimeMillis = System.currentTimeMillis();
+                System.out.println(currentTimeMillis);
+            }));
+        }
 
-        Thread.sleep(50000);
+
     }
 
 }

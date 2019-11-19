@@ -2,10 +2,8 @@ package com.ahzak.utils.timer;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -32,11 +30,12 @@ class DelayTimer {
                 new BasicThreadFactory.Builder().namingPattern("delayTimer-scheduled-pool-%d").daemon(true).build());
 
         scheduledExecutorService.scheduleWithFixedDelay(() -> {
+            System.out.println(LocalDateTime.now());
             ++dial.currentIndex;
             if (dial.currentIndex == 3600) {
                 dial.currentIndex = 0;
             }
-            List<DelayTask> delayTasks = dial.taskSlot[dial.currentIndex];
+            Queue<DelayTask> delayTasks = dial.taskSlot[dial.currentIndex];
             Iterator<DelayTask> iterator = delayTasks.iterator();
             while (iterator.hasNext()) {
                 DelayTask delayTask = iterator.next();
@@ -52,13 +51,13 @@ class DelayTimer {
 
 
     private class Dial {
-        List<DelayTask>[] taskSlot;
+        Queue<DelayTask>[] taskSlot;
         int currentIndex;
 
         Dial() {
-            taskSlot = new LinkedList[3600];
+            taskSlot = new ConcurrentLinkedQueue[3600];
             for (int i = 0; i < 3600; i++) {
-                taskSlot[i] = Collections.synchronizedList(new LinkedList<>());
+                taskSlot[i] = new ConcurrentLinkedQueue<>();
             }
         }
     }

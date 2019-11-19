@@ -18,7 +18,6 @@ public class DelayTask {
     @Getter
     private long delay;
 
-
     long cycleNum;
 
     /**
