@@ -2,6 +2,7 @@ package com.ahzak.utils.timer;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -57,7 +58,7 @@ class DelayTimer {
         Dial() {
             taskSlot = new LinkedList[3600];
             for (int i = 0; i < 3600; i++) {
-                taskSlot[i] = new LinkedList<>();
+                taskSlot[i] = Collections.synchronizedList(new LinkedList<>());
             }
         }
     }
