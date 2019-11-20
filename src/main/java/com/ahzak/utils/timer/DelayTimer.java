@@ -3,7 +3,8 @@ package com.ahzak.utils.timer;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Queue;
 import java.util.concurrent.*;
 
 /**
@@ -64,8 +65,9 @@ class DelayTimer {
 
 
     void addDelayTask(DelayTask delayTask) {
-        int slot = (int) (delayTask.getDelay() % 3600 + dial.currentIndex);
-        dial.taskSlot[slot].add(delayTask);
+        DelayTask clone = new DelayTask(delayTask.getDelay(), delayTask.getRunnable());
+        int slot = (int) (clone.getDelay() % 3600 + dial.currentIndex);
+        dial.taskSlot[slot].add(clone);
     }
 
 }

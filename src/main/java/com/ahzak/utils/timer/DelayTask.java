@@ -33,7 +33,6 @@ public class DelayTask {
     }
 
     /**
-     * 如果在该任务对象被加入到延时任务执行列表中后，再调用setDelay方法， 将会导致延时错乱
      * @param delay 延时时长 单位：秒
      */
     public void setDelay(long delay) {
