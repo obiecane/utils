@@ -23,7 +23,7 @@ class DelayTimer {
     private ScheduledExecutorService scheduledExecutorService;
 
     {
-        executorService = new ThreadPoolExecutor(8, 200, 0L, TimeUnit.MILLISECONDS,
+        executorService = new ThreadPoolExecutor(16, 256, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(1024), new BasicThreadFactory.Builder().namingPattern("delayTimer-execute-pool-%d").daemon(true).build(),
                 new ThreadPoolExecutor.AbortPolicy());
 
@@ -52,8 +52,8 @@ class DelayTimer {
 
 
     private static class Dial {
-        Queue<DelayTask>[] taskSlot;
-        int currentIndex;
+        final Queue<DelayTask>[] taskSlot;
+        volatile int currentIndex;
 
         Dial() {
             taskSlot = new ConcurrentLinkedQueue[3600];
