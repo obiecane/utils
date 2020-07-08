@@ -1,7 +1,7 @@
 package com.ahzak.utils;
 
 import cn.hutool.core.io.IoUtil;
-import com.jeecms.jspgouexclusive.exception.GlobalException;
+import com.ahzak.utils.exception.GlobalException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 

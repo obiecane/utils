@@ -1,6 +1,5 @@
 package com.ahzak.utils.autofetch;
 
-import com.ahzak.utils.StringUtil;
 import com.gargoylesoftware.htmlunit.html.DomNode;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
@@ -215,9 +214,11 @@ public abstract class TitleAutoFetch implements AutoFetch {
         String content = domNode.getTextContent();
         content = content.replaceAll("[\n\t（）(|) ]", "").trim();
         // 标题长度
-        return !StringUtils.isBlank(content) && content.length() >= 6 && (StringUtil.isEnglish(content) ? StringUtil.words(content) <= 30 : content.replaceAll("\\s", "").length() <=  30);
+        return !StringUtils.isBlank(content) && content.length() >= 6 ;
+//                && (StringUtil.isEnglish(content)
+//                ? StringUtil.words(content) <= 30
+//                : content.replaceAll("\\s", "").length() <=  30);
     }
-
 
 
     /**
