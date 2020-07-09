@@ -46,6 +46,10 @@ class Config {
      */
     private UploadStrategy strategy = UploadStrategy.LOCAL;
 
+    /**
+     * 访问链接拼接策略
+     */
+    private UrlSpliceStrategy urlSpliceStrategy = UrlSpliceStrategy.DYNAMIC;
 
     /**
      * 本地存储配置
@@ -128,6 +132,31 @@ class Config {
 
     @Data
     static class FtpConfig {
+
+        /**
+         * ftp主机
+         */
+        private String host = "127.0.0.1";
+
+        /**
+         * ftp端口
+         */
+        private int port = 21;
+
+        /**
+         * 用户
+         */
+        private String username = "ftpuser";
+
+        /**
+         * 密码
+         */
+        private String password = "ftpuser";
+
+        /**
+         * 文件夹前缀
+         */
+        private String dirPrefix = ".";
 
         /**
          * url前缀

@@ -12,28 +12,48 @@ enum UploadStrategy {
     /**
      * 本地
      */
-    LOCAL(new LocalUploader()),
+    LOCAL('1', new LocalUploader()),
     /**
      * 远程
      */
-    REMOTE(new RemoteUploader()),
+    REMOTE('2', new RemoteUploader()),
     /**
      * ftp
      */
-    FTP(new FtpUploader()),
+    FTP('3', new FtpUploader()),
     /**
      * 阿里云对象存储
      */
-    ALI_OSS(new AliOSSUploader());
+    ALI_OSS('4', new AliOSSUploader());
 
     Uploader uploader;
+    char charFlag;
 
-    UploadStrategy(Uploader uploader) {
+    UploadStrategy(char charFlag, Uploader uploader) {
+        this.charFlag = charFlag;
         this.uploader = uploader;
     }
 
 
     Uploader getUploader() {
         return uploader;
+    }
+
+    static UploadStrategy valueOf(char charFlag) {
+        if (charFlag == LOCAL.charFlag) {
+            return LOCAL;
+        } else if (charFlag == REMOTE.charFlag) {
+            return REMOTE;
+        } else if (charFlag == FTP.charFlag) {
+            return FTP;
+        } else if (charFlag == ALI_OSS.charFlag) {
+            return ALI_OSS;
+        }
+        return null;
+    }
+
+
+    String getUrlParameter() {
+        return "rt=" + this.charFlag;
     }
 }

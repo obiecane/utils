@@ -1,8 +1,10 @@
 package com.ahzak.utils.upload;
 
+import cn.hutool.extra.ftp.Ftp;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author Zhu Kaixiao
@@ -13,14 +15,31 @@ import java.io.IOException;
  */
 class FtpUploader extends AbstractUploader {
 
-
     @Override
-    protected String url(String filename) {
-        return null;
+    public UploadResult upload(Resource resource) throws IOException {
+        UploadContext context = UploadContext.wrap(resource);
+
+        try (Ftp ftp = new Ftp(getFtpConfig().getHost(), getFtpConfig().getPort(), getFtpConfig().getUsername(), getFtpConfig().getPassword())) {
+            ftp.init();
+            context.attach("ftp", ftp);
+            prepareStore(context);
+
+            try (InputStream in = resource.getInputStream()) {
+                ftp.upload(getFtpConfig().getDirPrefix() + context.getDir(), context.getFilename(), in);
+            }
+        }
+
+        return UploadResult.of(context);
     }
 
     @Override
-    public UploadResult upload(Resource resources) throws IOException {
-        throw new RuntimeException("暂不支持");
+    protected boolean exist(UploadContext context) {
+        Ftp ftp = context.getAttach("ftp");
+        return ftp.existFile(getFtpConfig().getDirPrefix() + context.getDir() + context.getFilename());
     }
+
+    private Config.FtpConfig getFtpConfig() {
+        return Config.getInstance().getFtp();
+    }
+
 }

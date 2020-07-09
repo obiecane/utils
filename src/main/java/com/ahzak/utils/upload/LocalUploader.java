@@ -1,10 +1,8 @@
 package com.ahzak.utils.upload;
 
-import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.io.FileUtil;
 import org.springframework.core.io.Resource;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -21,21 +19,19 @@ class LocalUploader extends AbstractUploader {
 
     @Override
     public UploadResult upload(Resource resource) throws IOException {
-        String filename = filename(resource);
+        UploadContext context = UploadContext.wrap(resource);
+        prepareStore(context);
 
-        File dest = new File(getLocalConfig().getStoreLocation() + filename(resource));
-
-        try (InputStream inputStream = resource.getInputStream();
-             FileOutputStream outputStream = new FileOutputStream(dest)) {
-            IoUtil.copy(inputStream, outputStream);
+        try (InputStream inputStream = resource.getInputStream()) {
+            FileUtil.writeFromStream(inputStream, getLocalConfig().getStoreLocation() + context.getPath());
         }
 
-        return new UploadResult(url(filename), path(filename));
+        return UploadResult.of(context);
     }
 
     @Override
-    protected String url(String filename) {
-        return getLocalConfig().getUrlPrefix() + path(filename);
+    protected boolean exist(UploadContext context) {
+        return FileUtil.exist(getLocalConfig().getStoreLocation() + context.getPath());
     }
 
     private Config.LocalConfig getLocalConfig() {

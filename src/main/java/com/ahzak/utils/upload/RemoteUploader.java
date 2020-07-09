@@ -2,6 +2,7 @@ package com.ahzak.utils.upload;
 
 import com.ahzak.utils.JcResult;
 import com.ahzak.utils.TokenUtil;
+import com.ahzak.utils.spring.SpringMvcUtil;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -12,10 +13,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -31,10 +29,6 @@ class RemoteUploader extends AbstractUploader {
 
     private RestTemplate restTemplate = new RestTemplate();
 
-    @Override
-    protected String url(String filename) {
-        return null;
-    }
 
     @Override
     public List<UploadResult> upload(Collection<Resource> resources) throws IOException {
@@ -42,7 +36,7 @@ class RemoteUploader extends AbstractUploader {
         MediaType type = MediaType.parseMediaType("multipart/form-data");
         // 设置请求的格式类型
         headers.setContentType(type);
-        headers.setBearerAuth(TokenUtil.getSystemToken());
+        headers.setBearerAuth(Optional.ofNullable(SpringMvcUtil.currToken()).orElse(TokenUtil.getSystemToken()));
 
         MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
         for (Resource resource : resources) {
@@ -58,9 +52,14 @@ class RemoteUploader extends AbstractUploader {
         }
         List<Map<String, String>> data = (List<Map<String, String>>) jcResult.getData();
         List<UploadResult> results = data.stream()
-                .map(m -> new UploadResult(m.get("url"), m.get("path")))
+                .map(m -> new UploadResult(m.get("url"), replaceRT(m.get("path")), m.get("filename")))
                 .collect(Collectors.toList());
         return results;
+    }
+
+
+    private String replaceRT(String str) {
+        return str.substring(0, str.length() - 4) + Config.getInstance().getStrategy().getUrlParameter();
     }
 
     @Override

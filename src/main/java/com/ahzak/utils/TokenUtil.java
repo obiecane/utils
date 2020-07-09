@@ -44,8 +44,8 @@ public class TokenUtil {
             refreshMap();
         }
 
-        Object access_token = system_token_map.get("access_token");
-        return access_token == null ? null : (String) access_token;
+        String access_token = system_token_map == null ? null : (String) system_token_map.get("access_token");
+        return access_token;
     }
 
     public static String getTokenType() {
@@ -53,8 +53,8 @@ public class TokenUtil {
             refreshMap();
         }
 
-        Object type = system_token_map.get("token_type");
-        return type == null ? null : (String) type;
+        String type = system_token_map == null ? null : (String) system_token_map.get("token_type");
+        return type;
     }
 
 
