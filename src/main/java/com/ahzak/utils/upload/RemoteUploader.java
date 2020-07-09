@@ -92,12 +92,14 @@ class RemoteUploader extends AbstractUploader {
                         Config.getInstance().getRemote().getHost(),
                         Config.getInstance().getRemote().getPort()
                 );
-                String body = HttpUtil
-                        .createGet(url)
-                        .header("remote-auth-token", getRemoteAuth(url))
-                        .execute()
-                        .body();
-                LocalConfigVO localConfigVO = JSONObject.parseObject(body, LocalConfigVO.class);
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("remote-auth-token",getRemoteAuth(url));
+                headers.setBearerAuth(Optional.ofNullable(SpringMvcUtil.currToken()).orElse(TokenUtil.getSystemToken()));
+                HttpEntity<String> requestEntity = new HttpEntity<>(null, headers);
+                ResponseEntity<LocalConfigVO> resEntity = restTemplate.exchange(url, HttpMethod.GET, requestEntity, LocalConfigVO.class);
+
+                LocalConfigVO localConfigVO = resEntity.getBody();
                 String validFileFullPath = localConfigVO.getValidFileFullPath();
                 // 是在同一台机器上
                 if (FileUtil.exist(validFileFullPath)) {
