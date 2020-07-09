@@ -47,6 +47,11 @@ class Config {
     private UploadStrategy strategy = UploadStrategy.LOCAL;
 
     /**
+     * 启用上传端点
+     */
+    private boolean enableEndpoint = false;
+
+    /**
      * 访问链接拼接策略
      */
     private UrlSpliceStrategy urlSpliceStrategy = UrlSpliceStrategy.DYNAMIC;

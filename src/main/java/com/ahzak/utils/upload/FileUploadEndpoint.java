@@ -1,20 +1,24 @@
 package com.ahzak.utils.upload;
 
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.IdUtil;
+import com.ahzak.utils.FileUtil;
 import com.ahzak.utils.JcResult;
 import com.ahzak.utils.MultipartFileResource;
 import com.ahzak.utils.exception.GlobalException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.core.io.Resource;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -25,7 +29,7 @@ import java.util.stream.Collectors;
  * 仅限于授权后使用，禁止非授权传阅以及私自用于商业目的。
  */
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-@ConditionalOnProperty(prefix = "jeemarket.upload", name = "strategy", havingValue = "LOCAL")
+@ConditionalOnProperty(prefix = "jeemarket.upload", name = "enableEndpoint", havingValue = "true")
 @RestController
 class FileUploadEndpoint {
 

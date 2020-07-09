@@ -1,19 +1,24 @@
 package com.ahzak.utils.upload;
 
+import cn.hutool.http.HttpUtil;
+import com.ahzak.utils.EncodeUtils;
+import com.ahzak.utils.FileUtil;
 import com.ahzak.utils.JcResult;
 import com.ahzak.utils.TokenUtil;
 import com.ahzak.utils.spring.SpringMvcUtil;
+import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +37,10 @@ class RemoteUploader extends AbstractUploader {
 
     @Override
     public List<UploadResult> upload(Collection<Resource> resources) throws IOException {
+        // 如果远端服务也在同一台机器上， 那么转为本地文件操作
+        if (isSelf()) {
+            return UploadStrategy.LOCAL.getUploader().upload(resources);
+        }
         HttpHeaders headers = new HttpHeaders();
         MediaType type = MediaType.parseMediaType("multipart/form-data");
         // 设置请求的格式类型
@@ -69,5 +78,47 @@ class RemoteUploader extends AbstractUploader {
 
     private Config.RemoteConfig getRemoteConfig() {
         return Config.getInstance().getRemote();
+    }
+
+    private volatile Boolean isSelf = null;
+    private Lock lock = new ReentrantLock();
+    private boolean isSelf() {
+        if (isSelf != null) {
+            return isSelf;
+        }
+        if (lock.tryLock()) {
+            try {
+                String url = String.format("http://%s:%s/res/upload/localConfig",
+                        Config.getInstance().getRemote().getHost(),
+                        Config.getInstance().getRemote().getPort()
+                );
+                String body = HttpUtil
+                        .createGet(url)
+                        .header("remote-auth-token", getRemoteAuth(url))
+                        .execute()
+                        .body();
+                LocalConfigVO localConfigVO = JSONObject.parseObject(body, LocalConfigVO.class);
+                String validFileFullPath = localConfigVO.getValidFileFullPath();
+                // 是在同一台机器上
+                if (FileUtil.exist(validFileFullPath)) {
+                    isSelf = true;
+                    // 覆盖本地策略的配置
+                    Config.getInstance().setLocal(localConfigVO.getLocalConfig());
+                    FileUtil.del(validFileFullPath);
+                } else {
+                    isSelf = false;
+                }
+            } catch (Exception ignored) {
+                isSelf = false;
+            } finally {
+                lock.unlock();
+            }
+        }
+        return false;
+    }
+
+    private String getRemoteAuth(String url) {
+        String auth = StringUtils.reverse(EncodeUtils.paramEncrypt("tauthr", url));
+        return auth;
     }
 }
