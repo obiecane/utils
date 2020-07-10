@@ -24,7 +24,7 @@ public class EncodeUtils {
      * @author Zhu Kaixiao
      * @date 2019/9/18 17:19
      **/
-    public static String paramEncrypt(String key, String value) {
+    public static String encrypt(String key, String value) {
         byte[] bytes = value.getBytes();
         int[] arr = new int[(int) Math.ceil(bytes.length / 4.0)];
         for (int i = 0, j = 0; i < bytes.length; i += 4, j++) {
@@ -73,7 +73,7 @@ public class EncodeUtils {
      * @author Zhu Kaixiao
      * @date 2019/9/18 17:19
      **/
-    public static String paramDecrypt(String key, String value) throws Exception {
+    public static String decrypt(String key, String value) throws Exception {
         if (value.length() % 6 > 0) {
             throw new Exception("内容被篡改");
         }

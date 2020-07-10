@@ -237,9 +237,7 @@ public class CollectionUtil extends cn.hutool.core.collection.CollectionUtil {
         }
 
 
-        boolean flg = collection1.size() < collection2.size()
-                ? true
-                : false;
+        boolean flg = collection1.size() < collection2.size();
 
         List list = new ArrayList();
         if (flg) {

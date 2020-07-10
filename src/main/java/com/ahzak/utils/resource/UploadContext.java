@@ -1,4 +1,4 @@
-package com.ahzak.utils.upload;
+package com.ahzak.utils.resource;
 
 
 import lombok.Getter;
@@ -65,6 +65,6 @@ class UploadContext {
     }
 
     public String getAccessUrl() {
-        return UploadUtil.getUrlPrefix() + getPath();
+        return ResourceUtil.getUrlPrefix() + getPath();
     }
 }

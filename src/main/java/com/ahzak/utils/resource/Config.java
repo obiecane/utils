@@ -1,4 +1,4 @@
-package com.ahzak.utils.upload;
+package com.ahzak.utils.resource;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +50,7 @@ class Config {
      * 启用上传端点
      */
     private boolean enableEndpoint = false;
+
 
     /**
      * 访问链接拼接策略

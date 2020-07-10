@@ -35,11 +35,7 @@ public class CaptchaUtil {
         if (StringUtils.isBlank(captcha)) {
             return false;
         }
-        if (!captcha.equals(code)) {
-            return false;
-        }
-
-        return true;
+        return captcha.equals(code);
     }
 
     /**

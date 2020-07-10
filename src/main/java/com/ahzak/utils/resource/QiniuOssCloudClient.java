@@ -1,4 +1,4 @@
-package com.ahzak.utils.upload;
+package com.ahzak.utils.resource;
 
 import com.ahzak.utils.exception.GlobalException;
 import com.alibaba.fastjson.JSONObject;

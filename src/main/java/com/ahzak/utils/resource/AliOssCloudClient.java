@@ -1,4 +1,4 @@
-package com.ahzak.utils.upload;
+package com.ahzak.utils.resource;
 
 import com.aliyun.oss.ClientConfiguration;
 import com.aliyun.oss.OSSClient;

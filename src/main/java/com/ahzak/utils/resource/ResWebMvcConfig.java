@@ -1,4 +1,4 @@
-package com.ahzak.utils.upload;
+package com.ahzak.utils.resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

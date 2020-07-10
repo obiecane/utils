@@ -1,4 +1,4 @@
-package com.ahzak.utils.upload;
+package com.ahzak.utils.resource;
 
 /**
  * @author Zhu Kaixiao
@@ -12,30 +12,30 @@ enum UploadStrategy {
     /**
      * 本地
      */
-    LOCAL('1', new LocalUploader()),
+    LOCAL('1', new LocalResourceOperator()),
     /**
      * 远程
      */
-    REMOTE('2', new RemoteUploader()),
+    REMOTE('2', new RemoteResourceOperator()),
     /**
      * ftp
      */
-    FTP('3', new FtpUploader()),
+    FTP('3', new FtpResourceOperator()),
     /**
      * 阿里云对象存储
      */
-    ALI_OSS('4', new AliOSSUploader());
+    ALI_OSS('4', new AliOSSResourceOperator());
 
-    Uploader uploader;
+    ResourceOperator uploader;
     char charFlag;
 
-    UploadStrategy(char charFlag, Uploader uploader) {
+    UploadStrategy(char charFlag, ResourceOperator uploader) {
         this.charFlag = charFlag;
         this.uploader = uploader;
     }
 
 
-    Uploader getUploader() {
+    ResourceOperator getUploader() {
         return uploader;
     }
 

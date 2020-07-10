@@ -1,4 +1,4 @@
-package com.ahzak.utils.upload;
+package com.ahzak.utils.resource;
 
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;

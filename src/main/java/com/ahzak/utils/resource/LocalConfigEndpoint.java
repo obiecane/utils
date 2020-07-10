@@ -1,13 +1,12 @@
-package com.ahzak.utils.upload;
+package com.ahzak.utils.resource;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import com.ahzak.utils.EncodeUtils;
-import com.ahzak.utils.FileUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,17 +18,6 @@ import java.io.IOException;
 @ConditionalOnProperty(prefix = "jeemarket.upload", name = "strategy", havingValue = "LOCAL")
 @RestController
 public class LocalConfigEndpoint {
-
-    /**
-     * 用于删除文件
-     * 禁止该接口被外部调用
-     */
-    @DeleteMapping("/res/upload")
-    public void delFile(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        check(request, response);
-
-        // do delete
-    }
 
     /**
      * 获取本地配置信息
@@ -45,15 +33,25 @@ public class LocalConfigEndpoint {
         return new LocalConfigVO(validFileFullPath, Config.getInstance().getLocal());
     }
 
-    private void check(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    /**
+     * 防止其他调用
+     *
+     * @param request
+     * @param response
+     * @return void
+     * @author Zhu Kaixiao
+     * @date 2020/7/10 8:47
+     */
+    static void check(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String authToken = request.getHeader("remote-auth-token");
         String requestUrl = request.getRequestURL().toString();
         try {
-            String decrypt = EncodeUtils.paramDecrypt("", StringUtils.reverse(authToken));
+            String decrypt = EncodeUtils.decrypt("tauthr", StringUtils.reverse(authToken));
             if (requestUrl.equalsIgnoreCase(decrypt)) {
                 return;
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
         response.sendError(HttpStatus.NOT_FOUND.value());
     }
 }

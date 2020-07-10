@@ -436,11 +436,7 @@ public class MyDateUtils extends org.apache.commons.lang3.time.DateUtils {
 		int compare = compareDate.compareTo(date);
 		boolean isInDate = (compareDate.after(getStartDate(date)) && compareDate.before(getFinallyDate(date)))
 				|| compare == 0;
-		if (isInDate) {
-			return true;
-		} else {
-			return false;
-		}
+        return isInDate;
 	}
 
 	/**

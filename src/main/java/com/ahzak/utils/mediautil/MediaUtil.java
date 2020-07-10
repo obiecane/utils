@@ -468,7 +468,7 @@ public class MediaUtil {
             try {
                 cutVideoFrame(videoFile, tempPath, time, width, height, DEFAULT_TIME_LENGTH, true);
                 // 生成gif
-                String images[] = file.list();
+                String[] images = file.list();
                 for (int i = 0; i < images.length; i++) {
                     images[i] = tempPath + File.separator + images[i];
                 }
@@ -477,7 +477,7 @@ public class MediaUtil {
                 log.error("--- 截取视频帧操作出错 --- 错误信息：" + e.getMessage());
             } finally {
                 // 删除用于生成gif的临时文件
-                String images[] = file.list();
+                String[] images = file.list();
                 for (int i = 0; i < images.length; i++) {
                     File fileDelete = new File(tempPath + File.separator + images[i]);
                     fileDelete.delete();
@@ -952,7 +952,7 @@ public class MediaUtil {
      * @param formats
      * @return
      */
-    private static boolean isLegalFormat(String format, String formats[]) {
+    private static boolean isLegalFormat(String format, String[] formats) {
         for (String item : formats) {
             if (item.equals(StringUtils.upperCase(format))) {
                 return true;
@@ -968,7 +968,7 @@ public class MediaUtil {
      * @param outputPath 生成的gif文件名（包含路径）
      * @param playTime   播放的延迟时间，可调整gif的播放速度
      */
-    private static void createGifImage(String image[], String outputPath, int playTime) {
+    private static void createGifImage(String[] image, String outputPath, int playTime) {
         if (null == outputPath) {
             throw new RuntimeException("转换后的GIF路径为空，请检查转换后的GIF存放路径是否正确");
         }
@@ -976,7 +976,7 @@ public class MediaUtil {
             AnimatedGifEncoder encoder = new AnimatedGifEncoder();
             encoder.setRepeat(0);
             encoder.start(outputPath);
-            BufferedImage src[] = new BufferedImage[image.length];
+            BufferedImage[] src = new BufferedImage[image.length];
             for (int i = 0; i < src.length; i++) {
                 encoder.setDelay(playTime); // 设置播放的延迟时间
                 src[i] = ImageIO.read(new File(image[i])); // 读入需要播放的jpg文件

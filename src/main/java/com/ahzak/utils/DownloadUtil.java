@@ -1,13 +1,13 @@
 package com.ahzak.utils;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.URLUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 
 /**
  * 文件下载
@@ -30,7 +30,8 @@ public class DownloadUtil {
      * @date 2019/7/12 9:48
      */
     public static File downloadFromUrl(String urlStr, String savePath, boolean overwrite) {
-        return downloadFromUrl(urlStr, new File(savePath), overwrite);
+        File file = new File(savePath + File.separator + getFilenameFromUrl(urlStr));
+        return downloadFromUrl(urlStr, file, overwrite);
     }
 
     public static File downloadFromUrl(String urlStr, File saveFile, boolean overwrite) {
@@ -58,10 +59,7 @@ public class DownloadUtil {
                 throw new IllegalArgumentException(String.format("文件已存在: [%s]", file.getCanonicalPath()));
             }
 
-            File dir = file.getParentFile();
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
+            FileUtil.touch(file);
 
             URL url = new URL(encodeUrl(urlStr));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -179,7 +177,7 @@ public class DownloadUtil {
             if (i == 0) {
                 newUrlSb.append(sfSp[i]).append("/");
             } else {
-                newUrlSb.append(URLEncoder.encode(sfSp[i], "UTF-8")).append("/");
+                newUrlSb.append(URLUtil.encode(sfSp[i])).append("/");
             }
         }
 
@@ -189,7 +187,7 @@ public class DownloadUtil {
             newUrlSb.append("?");
             for (String s : param.split("&")) {
                 String[] paramSp = s.split("=");
-                newUrlSb.append(URLEncoder.encode(paramSp[0], "UTF-8")).append("=").append(URLEncoder.encode(paramSp[1], "UTF-8")).append("&");
+                newUrlSb.append(URLUtil.encode(paramSp[0])).append("=").append(URLUtil.encode(paramSp[1])).append("&");
             }
             newUrlSb.delete(newUrlSb.length() - 1, newUrlSb.length());
         }
@@ -197,4 +195,7 @@ public class DownloadUtil {
         return newUrlSb.toString();
     }
 
+    private static String getFilenameFromUrl(String urlStr) {
+        return urlStr.substring(urlStr.lastIndexOf("/") + 1);
+    }
 }

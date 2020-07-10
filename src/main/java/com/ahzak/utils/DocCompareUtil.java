@@ -783,11 +783,11 @@ public class DocCompareUtil {
                 lineStart = lineEnd + 1;
 
                 if (lineHash.containsKey(line)) {
-                    chars.append(String.valueOf((char) (int) lineHash.get(line)));
+                    chars.append((char) (int) lineHash.get(line));
                 } else {
                     lineArray.add(line);
                     lineHash.put(line, lineArray.size() - 1);
-                    chars.append(String.valueOf((char) (lineArray.size() - 1)));
+                    chars.append((char) (lineArray.size() - 1));
                 }
             }
             return chars.toString();

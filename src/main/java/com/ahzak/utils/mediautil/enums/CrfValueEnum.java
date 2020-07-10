@@ -34,10 +34,7 @@ public enum CrfValueEnum {
     }
 
     public static boolean isValid(Integer typeCode) {
-        if (TYPE_CODE_SET.contains(typeCode)) {
-            return true;
-        }
-        return false;
+        return TYPE_CODE_SET.contains(typeCode);
     }
 
     public static CrfValueEnum convertoEnum(Integer typeCode) {

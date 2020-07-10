@@ -36,10 +36,7 @@ public enum PresetValueEnum {
     }
 
     public static boolean isValid(String typeValue) {
-        if (TYPE_VALUE_SET.contains(typeValue)) {
-            return true;
-        }
-        return false;
+        return TYPE_VALUE_SET.contains(typeValue);
     }
 
     public static PresetValueEnum convertoEnum(String typeValue) {
