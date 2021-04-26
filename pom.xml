@@ -19,7 +19,7 @@
         <poi.version>3.17</poi.version>
         <mail.version>1.4.7</mail.version>
         <commons-net.version>3.6</commons-net.version>
-        <commons-io.version>2.6</commons-io.version>
+        <commons-io.version>2.7</commons-io.version>
     </properties>
 
     <dependencies>
