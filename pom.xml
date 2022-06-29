@@ -16,7 +16,7 @@
 
     <properties>
         <java.version>1.8</java.version>
-        <poi.version>3.17</poi.version>
+        <poi.version>4.1.1</poi.version>
         <mail.version>1.4.7</mail.version>
         <commons-net.version>3.6</commons-net.version>
         <commons-io.version>2.6</commons-io.version>
